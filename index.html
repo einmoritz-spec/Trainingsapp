@@ -83,6 +83,17 @@ input{ font-family: inherit; }
 .home-thumb-spacer{ flex:1 1 auto; min-height:12px; }
 .home-thumb-block{ flex-shrink:0; }
 
+/* ---------- Trainingsauswahl: "Training importieren"/"Kategorie hinzufügen" unten ---------- */
+/* Hält die beiden Buttons unten am Bildschirmrand fest, statt direkt unter den Kacheln zu
+   hängen — bei wenigen Kacheln stünden sie sonst mitten auf dem Bildschirm statt am unteren
+   Rand. Gleiches Prinzip wie .home-thumb-wrap auf der Startseite. */
+.start-select-wrap{
+  display:flex; flex-direction:column;
+  min-height: calc(100vh - 40px);
+  min-height: calc(100dvh - 40px);
+}
+.start-select-spacer{ flex:1 1 auto; min-height:24px; }
+
 /* ---------- Top identity ---------- */
 .brand{ margin-bottom: 14px; }
 .brand h1{
@@ -1042,7 +1053,28 @@ html[data-theme="light"] #btnSummaryShare{ color:#000; border-color:#000; }
   font-family:'JetBrains Mono', monospace; font-size:11px; color: var(--muted);
   display:flex; align-items:center; gap:8px;
 }
+/* Der Aufklapp-Pfeil selbst, unabhängig vom Rest von .mg-meta (das ggf. noch einen kleinen
+   Badge-Text davor zeigt) — deutlich größer, damit er als Aufklapp-Indikator klar erkennbar
+   ist statt als winziges Zeichen fast unterzugehen. */
+.mg-arrow{ font-size:16px; line-height:1; color: var(--text); display:inline-block; }
 .muscle-group-body{ margin-top:10px; }
+/* Stecken Kopf und Körper zusammen in einer gemeinsamen Karte (.muscle-group als direkter
+   Elternknoten, siehe settingsAccordionSection() u. a.), wirkt das Ganze beim Aufklappen wie
+   EIN Element, das einfach länger wird — statt wie zwei separate Boxen mit sichtbarer Lücke
+   dazwischen. Der Körper übernimmt dafür Rand/Ecken/Hintergrund der Karte (nur oben durch
+   eine Trennlinie vom Kopf abgesetzt), der Kopf verliert seinen eigenen Rahmen und wird zur
+   obersten Zeile dieser Karte. Andere Stellen, die .muscle-group-header/-body OHNE die
+   .muscle-group-Karte drumherum nutzen (z. B. die Monats-Zeilen in der Workouts-Übersicht,
+   dort bereits innerhalb einer Jahres-Karte verschachtelt), bleiben davon unberührt, da diese
+   Regeln gezielt nur direkte Kinder von .muscle-group treffen.*/
+.muscle-group{
+  border:1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface); overflow:hidden;
+}
+.muscle-group > .muscle-group-header{ border:none; border-radius:0; background:none; }
+.muscle-group > .muscle-group-body{
+  margin-top:0; padding-top:10px; padding-bottom:14px; border-top:1px solid var(--border);
+}
 
 /* ---------- Workouts-Übersicht: Jahres-Zusammenfassung ---------- */
 .workouts-year-header{
@@ -1074,7 +1106,7 @@ html[data-theme="light"] #btnSummaryShare{ color:#000; border-color:#000; }
 /* ---------- Start-Auswahl (Ganzkörper/Ober/Unter/Frei) ---------- */
 .start-grid{
   display:grid; grid-template-columns: 1fr 1fr; gap:14px;
-  max-width: 320px; margin: 4px auto 24px;
+  width:100%; max-width: 320px; margin: 4px auto 24px;
 }
 /* Bei einer UNGERADEN Anzahl sichtbarer Kacheln (3 oder 5): alle bis auf die letzte bleiben
    im normalen 2er-Raster, die letzte füllt die komplette Breite der letzten Zeile aus (statt
@@ -3956,9 +3988,9 @@ function chartAccordionHTML(openSet, key, title, points, color, formatter, chart
     <div class="muscle-group" style="margin-top:10px;">
       <button class="muscle-group-header" data-chartacc="${key}" type="button">
         <span class="mg-name">${title}</span>
-        <span class="mg-meta">${last !== null ? `<span style="font-family:'JetBrains Mono', monospace; font-weight:700; color:${color};">${fmt(last)}</span>` : ''} ${isOpen ? '▾' : '▸'}</span>
+        <span class="mg-meta">${last !== null ? `<span style="font-family:'JetBrains Mono', monospace; font-weight:700; color:${color};">${fmt(last)}</span>` : ''} <span class="mg-arrow">${isOpen ? '▾' : '▸'}</span></span>
       </button>
-      <div class="muscle-group-body" style="display:${isOpen ? 'block' : 'none'}; margin-top:12px;">
+      <div class="muscle-group-body" style="display:${isOpen ? 'block' : 'none'}">
         ${chartSVG}
       </div>
     </div>
@@ -4159,7 +4191,7 @@ function renderWorkoutsOverview(){
       return `
         <button class="muscle-group-header" data-month="${mg.label.replace(/"/g,'&quot;')}" type="button">
           <span class="mg-name">${mg.label}</span>
-          <span class="mg-meta">${mg.sessions.length} Einheit${mg.sessions.length === 1 ? '' : 'en'} ${isOpen ? '▾' : '▸'}</span>
+          <span class="mg-meta">${mg.sessions.length} Einheit${mg.sessions.length === 1 ? '' : 'en'} <span class="mg-arrow">${isOpen ? '▾' : '▸'}</span></span>
         </button>
         <div class="muscle-group-body" style="display:${isOpen ? 'block' : 'none'}">
           ${mg.sessions.map(historyRowHTML).join('')}
@@ -4170,7 +4202,7 @@ function renderWorkoutsOverview(){
     return `
       <button class="workouts-year-header" data-year="${yg.year}" type="button">
         <span class="mg-name">${yg.year}</span>
-        <span class="mg-meta">${totalSessions} Einheit${totalSessions === 1 ? '' : 'en'} ${yearIsCollapsed ? '▸' : '▾'}</span>
+        <span class="mg-meta">${totalSessions} Einheit${totalSessions === 1 ? '' : 'en'} <span class="mg-arrow">${yearIsCollapsed ? '▸' : '▾'}</span></span>
       </button>
       <div class="workouts-year-body" style="display:${yearIsCollapsed ? 'none' : 'block'}">
         ${monthsHTML}
@@ -4389,7 +4421,7 @@ function renderProgressList(){
       <div class="muscle-group">
         <button class="muscle-group-header" data-group="${g}" type="button">
           <span class="mg-name">${g}</span>
-          <span class="mg-meta">${groupNames.length} Übung${groupNames.length === 1 ? '' : 'en'} ${isOpen ? '▾' : '▸'}</span>
+          <span class="mg-meta">${groupNames.length} Übung${groupNames.length === 1 ? '' : 'en'} <span class="mg-arrow">${isOpen ? '▾' : '▸'}</span></span>
         </button>
         <div class="muscle-group-body" style="display:${isOpen ? 'block' : 'none'}">
           ${itemsHTML}
@@ -4861,16 +4893,19 @@ function renderStartSelect(){
   const gridClass = totalCount === 1 ? 'count-1' : (totalCount % 2 === 1) ? 'count-odd' : (totalCount === 2 ? 'count-2' : '');
 
   app.innerHTML = `
-    <div class="back-row" style="margin-top:0;">
-      <button class="back-btn-icon" id="btnBack" aria-label="Zurück"><img src="${ICON_BACK_ARROW}" alt=""></button>
-    </div>
-    <div class="start-grid ${gridClass}" id="startGrid" style="margin-top:18px;">
-      ${cellsHTML}
-      ${freiHTML}
-    </div>
-    <div class="io-row" style="margin-top:32px;">
-      <button class="btn btn-ghost" id="btnImportSession">⬆ Training importieren</button>
-      <button class="btn btn-ghost" id="btnAddCategory">+ Kategorie hinzufügen</button>
+    <div class="start-select-wrap">
+      <div class="back-row" style="margin-top:0;">
+        <button class="back-btn-icon" id="btnBack" aria-label="Zurück"><img src="${ICON_BACK_ARROW}" alt=""></button>
+      </div>
+      <div class="start-grid ${gridClass}" id="startGrid" style="margin-top:18px;">
+        ${cellsHTML}
+        ${freiHTML}
+      </div>
+      <div class="start-select-spacer"></div>
+      <div class="io-row">
+        <button class="btn btn-ghost" id="btnImportSession">⬆ Training importieren</button>
+        <button class="btn btn-ghost" id="btnAddCategory">+ Kategorie hinzufügen</button>
+      </div>
     </div>
     <input type="file" id="importSessionFile" accept="application/json,.json" style="display:none;">
   `;
@@ -5860,7 +5895,7 @@ function renderModeEdit(mode, startTab){
         <div class="muscle-group">
           <button class="muscle-group-header" data-group="${g}" type="button">
             <span class="mg-name">${g}</span>
-            <span class="mg-meta">${selCount ? selCount + '/' : ''}${ids.length} Übung${ids.length === 1 ? '' : 'en'} ${isOpen ? '▾' : '▸'}</span>
+            <span class="mg-meta">${selCount ? selCount + '/' : ''}${ids.length} Übung${ids.length === 1 ? '' : 'en'} <span class="mg-arrow">${isOpen ? '▾' : '▸'}</span></span>
           </button>
           <div class="muscle-group-body" style="display:${isOpen ? 'block' : 'none'}">
             ${itemsHTML}
@@ -6099,7 +6134,7 @@ function renderFreeSelect(){
         <div class="muscle-group">
           <button class="muscle-group-header" data-group="${g}" type="button">
             <span class="mg-name">${g}</span>
-            <span class="mg-meta">${selCount ? selCount + '/' : ''}${ids.length} Übung${ids.length === 1 ? '' : 'en'} ${isOpen ? '▾' : '▸'}</span>
+            <span class="mg-meta">${selCount ? selCount + '/' : ''}${ids.length} Übung${ids.length === 1 ? '' : 'en'} <span class="mg-arrow">${isOpen ? '▾' : '▸'}</span></span>
           </button>
           <div class="muscle-group-body" style="display:${isOpen ? 'block' : 'none'}">
             ${itemsHTML}
@@ -6650,9 +6685,9 @@ function settingsAccordionSection(key, title, bodyHTML, badge){
     <div class="muscle-group" style="margin-top:14px;">
       <button class="muscle-group-header" data-settingsgroup="${key}" type="button">
         <span class="mg-name">${title}</span>
-        <span class="mg-meta">${badge ? `<span>${badge}</span>` : ''}${isOpen ? '▾' : '▸'}</span>
+        <span class="mg-meta">${badge ? `<span>${badge}</span>` : ''}<span class="mg-arrow">${isOpen ? '▾' : '▸'}</span></span>
       </button>
-      <div class="muscle-group-body" style="display:${isOpen ? 'block' : 'none'}; margin-top:10px;">
+      <div class="muscle-group-body" style="display:${isOpen ? 'block' : 'none'}">
         ${bodyHTML}
       </div>
     </div>
@@ -6674,7 +6709,7 @@ function renderSettings(){
     </div>
 
     ${settingsAccordionSection('darstellung', 'Darstellung', `
-      <div class="history-empty" style="text-align:left; padding:14px 16px;">
+      <div style="text-align:left; padding:14px 16px;">
         <label style="display:block; font-size:12px; color:var(--muted); margin-bottom:10px;">Farbmodus</label>
         <div class="wizard-choice-list" style="margin-bottom:18px;">
           <button class="wizard-choice ${currentThemeMode() === 'dark' ? 'selected' : ''}" data-theme-mode="dark">Dunkel</button>
@@ -6686,7 +6721,7 @@ function renderSettings(){
             <span style="width:20px; height:20px; border-radius:7px; background:${currentAccentColor().hex}; display:inline-block; flex-shrink:0;"></span>
             ${currentAccentColor().name}
           </span>
-          <span class="mg-meta">${accentPickerOpen ? '▾' : '▸'}</span>
+          <span class="mg-meta"><span class="mg-arrow">${accentPickerOpen ? '▾' : '▸'}</span></span>
         </button>
         <div class="accent-swatch-grid" style="display:${accentPickerOpen ? 'grid' : 'none'};">
           ${allAccentSwatches().map(c => `
@@ -6713,7 +6748,7 @@ function renderSettings(){
     `, darstellungBadge)}
 
     ${settingsAccordionSection('zahleneingabe', 'Zahleneingabe', `
-      <div class="history-empty" style="text-align:left; padding:14px 16px;">
+      <div style="text-align:left; padding:14px 16px;">
         <div class="wizard-choice-list">
           <button class="wizard-choice ${numberInputMode() === 'system' ? 'selected' : ''}" data-mode="system">Normale Tastatur</button>
           <button class="wizard-choice ${numberInputMode() === 'wheel' ? 'selected' : ''}" data-mode="wheel">Scroll-Rad</button>
@@ -6724,7 +6759,7 @@ function renderSettings(){
     `, zahlBadge)}
 
     ${settingsAccordionSection('split', 'Trainings-Split', `
-      <div class="history-empty" style="text-align:left; padding:14px 16px;">
+      <div style="text-align:left; padding:14px 16px;">
         <label class="justify-text" style="display:block; font-size:12px; color:var(--muted); margin-bottom:10px;">
           Markiert auf der Startseite automatisch das nächste fällige A/B, basierend auf deinem zuletzt absolvierten Training. Bei „Push / Pull / Legs" müssen entsprechend benannte Kacheln existieren (über das Stift-Symbol umbenennen oder als neue Kategorie anlegen).
         </label>
@@ -7267,7 +7302,7 @@ function renderPlanEditor(){
         <div class="muscle-group">
           <button class="muscle-group-header" data-group="${g}" type="button">
             <span class="mg-name">${g}</span>
-            <span class="mg-meta">${items.length} Übung${items.length === 1 ? '' : 'en'} ${isOpen ? '▾' : '▸'}</span>
+            <span class="mg-meta">${items.length} Übung${items.length === 1 ? '' : 'en'} <span class="mg-arrow">${isOpen ? '▾' : '▸'}</span></span>
           </button>
           <div class="muscle-group-body" style="display:${isOpen ? 'block' : 'none'}">
             ${items.map(({ ex, i }) => renderExerciseRowHTML(ex, i)).join('')}
@@ -7512,6 +7547,67 @@ function advanceToNextExercise(){
 // Popup-Zustand: null oder { entryIndex, setIndex, weight, reps } — siehe renderActive().
 let perfSuggestion = null;
 
+// Begrenzt Steigerungs-Vorschläge auf höchstens ~20% der Übungen EINER Trainingseinheit,
+// statt (wie zuvor) für jede passende Übung einen anzubieten — bei zwei identischen Einheiten
+// in Folge hätte das sonst quasi "die ganze Einheit auf einmal" gesteigert, was zu krass ist.
+// Aus allen diese Einheit betreffenden, grundsätzlich passenden Übungen (siehe
+// checkPerformanceSuggestion()/checkCardioPerfSuggestion()) werden gezielt die bevorzugt, die
+// am längsten her keinen Vorschlag mehr bekommen haben (plan.perfSuggestionLastShown) — so
+// verteilen sich die Vorschläge über mehrere Einheiten hinweg auf unterschiedliche Übungen,
+// statt immer dieselben (z. B. die ersten paar in der Reihenfolge) zu treffen. Die Auswahl
+// wird einmal pro aktiver Einheit berechnet und für deren Dauer zwischengespeichert
+// (sessionKey = active.startedAt, damit ein Wechsel auf eine andere Einheit sie neu bildet).
+let perfSuggestionQuota = null;
+function computePerfSuggestionQuota(){
+  const sessionKey = active && active.startedAt;
+  if (perfSuggestionQuota && perfSuggestionQuota.sessionKey === sessionKey) return perfSuggestionQuota.allowedIds;
+  const allowedIds = new Set();
+  let eligible = [];
+  let cap = 1;
+  if (active && active.entries && active.entries.length){
+    active.entries.forEach(entry => {
+      if (!entry || !entry.exerciseId) return;
+      const set = entry.sets[0];
+      if (!set) return;
+      const planEx = plan.exercises.find(e => e.id === entry.exerciseId);
+      let isEligible = false;
+      if (entry.type === 'time'){
+        if (planEx && planEx.cardioMachine) isEligible = !!checkCardioPerfSuggestion(entry.exerciseId, 0, set.seconds);
+      } else {
+        isEligible = !!checkPerformanceSuggestion(entry.exerciseId, 0, set.weight, set.reps, planEx);
+      }
+      if (isEligible) eligible.push(entry.exerciseId);
+    });
+    cap = Math.max(1, Math.round(active.entries.length * 0.2));
+    const lastShown = plan.perfSuggestionLastShown || {};
+    eligible.sort((a, b) => (lastShown[a] || '').localeCompare(lastShown[b] || ''));
+    eligible.slice(0, cap).forEach(id => allowedIds.add(id));
+  }
+  perfSuggestionQuota = { sessionKey, allowedIds, eligibleSorted: eligible, nextPromoteIndex: cap };
+  return allowedIds;
+}
+// Wird aufgerufen, wenn ein Vorschlag ABGELEHNT wurde: die betroffene Übung hatte ihre Chance
+// (siehe entry._perfSuggestionDismissed, verhindert ein erneutes Angebot bei ihr), aber ihr
+// Platz im ~20%-Kontingent dieser Einheit war damit "ungenutzt" — statt ihn verfallen zu
+// lassen, rückt die nächste, laut Rotation als Nächstes fällige noch nicht berücksichtigte
+// Übung nach. So kann in dieser Einheit bei einer anderen Übung noch ein Vorschlag auftauchen,
+// der ohne die Ablehnung sonst nicht gekommen wäre.
+function promoteNextPerfSuggestionSlot(){
+  const q = perfSuggestionQuota;
+  if (!q || q.sessionKey !== (active && active.startedAt)) return;
+  if (q.nextPromoteIndex >= q.eligibleSorted.length) return; // niemand mehr zum Nachrücken übrig
+  q.allowedIds.add(q.eligibleSorted[q.nextPromoteIndex]);
+  q.nextPromoteIndex++;
+}
+// Merkt sich, wann eine Übung zuletzt einen Performancemodus-Vorschlag bekommen hat — auch
+// wenn er abgelehnt wurde, denn "an der Reihe war" sie trotzdem schon (siehe
+// computePerfSuggestionQuota()). Nicht kritisch für den Ablauf, daher ohne await gespeichert.
+function markPerfSuggestionShown(exerciseId){
+  if (!plan.perfSuggestionLastShown) plan.perfSuggestionLastShown = {};
+  plan.perfSuggestionLastShown[exerciseId] = new Date().toISOString();
+  saveJSON('plan', plan);
+}
+
 // Zeigt den Performancemodus-Vorschlag automatisch an, sobald man in einer Übung ist —
 // ganz ohne vorher irgendwo klicken zu müssen. Grundlage ist der bereits vorausgefüllte
 // erste Satz (die "gemerkten" Werte vom letzten Mal, siehe buildEntry()), verglichen mit
@@ -7522,6 +7618,7 @@ function maybeShowPerfSuggestion(entry, ei, currentPlanEx){
   if (!plan.performanceMode || !entry) return;
   if (perfSuggestion) return; // es ist schon ein Vorschlag offen
   if (entry._perfSuggestionDismissed) return;
+  if (!computePerfSuggestionQuota().has(entry.exerciseId)) return; // außerhalb des ~20%-Kontingents dieser Einheit
   const si = 0;
   const set = entry.sets[si];
   if (!set || set.done) return;
@@ -7530,12 +7627,16 @@ function maybeShowPerfSuggestion(entry, ei, currentPlanEx){
     // automatischen Vorschlag — nur Kardiogeräte schlagen "30 Sekunden länger" vor.
     if (!currentPlanEx || !currentPlanEx.cardioMachine) return;
     const suggestion = checkCardioPerfSuggestion(entry.exerciseId, si, set.seconds);
-    if (suggestion) perfSuggestion = { entryIndex: ei, setIndex: si, seconds: suggestion.seconds };
+    if (suggestion){
+      perfSuggestion = { entryIndex: ei, setIndex: si, seconds: suggestion.seconds };
+      markPerfSuggestionShown(entry.exerciseId);
+    }
     return;
   }
   const suggestion = checkPerformanceSuggestion(entry.exerciseId, si, set.weight, set.reps, currentPlanEx);
   if (suggestion){
     perfSuggestion = { entryIndex: ei, setIndex: si, weight: suggestion.weight, reps: suggestion.reps };
+    markPerfSuggestionShown(entry.exerciseId);
   }
 }
 
@@ -7867,7 +7968,7 @@ function renderActive(){
             return `
               <button class="muscle-group-header" data-addexgroup="${g}" type="button">
                 <span class="mg-name">${g}</span>
-                <span class="mg-meta">${items.length} Übungen ${isOpen ? '▾' : '▸'}</span>
+                <span class="mg-meta">${items.length} Übungen <span class="mg-arrow">${isOpen ? '▾' : '▸'}</span></span>
               </button>
               <div class="muscle-group-body" style="display:${isOpen ? 'block' : 'none'}">
                 ${itemsHTML}
@@ -8313,6 +8414,7 @@ function renderActive(){
       const overlay = document.getElementById('perfSuggestOverlay');
       const dismiss = () => {
         entry._perfSuggestionDismissed = true; // in dieser Trainingseinheit nicht nochmal automatisch zeigen
+        promoteNextPerfSuggestionSlot(); // ungenutzter Kontingent-Platz rückt an die nächste Übung nach
         perfSuggestion = null;
         renderActive();
       };
