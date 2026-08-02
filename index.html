@@ -196,6 +196,15 @@ html[data-theme="light"] #btnSummaryShare{ color:#000; border-color:#000; }
 .history-month-label:first-child{ margin-top:14px; }
 
 /* ---------- Nav row / stat cards ---------- */
+.week-strip{ display:flex; justify-content:space-between; gap:4px; margin-bottom:20px; }
+.week-strip-day{ display:flex; flex-direction:column; align-items:center; gap:6px; flex:1; }
+.week-strip-label{ font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; }
+.week-strip-day-today .week-strip-label{ color:var(--text); }
+.week-strip-num{
+  width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center;
+  font-size:14px; font-weight:600; color:var(--text); box-sizing:border-box;
+}
+.week-strip-num-filled{ font-weight:700; }
 .nav-row{ display:flex; gap:8px; margin-bottom:22px; }
 .nav-row .gear{
   flex:1; text-align:center; padding:11px 6px; font-size:12.5px;
@@ -3505,6 +3514,61 @@ function fmtDate(iso){
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 
 /* ---------------------------------------------------
+   WOCHEN-STREIFEN (Startseite, unter "Trainingsplan", über den Buttons)
+   Zeigt die aktuelle Kalenderwoche (Mo–So). An Tagen, an denen trainiert wurde,
+   steckt die Datumszahl in einem gefüllten, abgerundeten Kasten in der
+   Rahmenfarbe der jeweiligen Trainings-Kachel (currentTileColor(mode)) bzw. in
+   der Akzentfarbe, falls für diese Kachel keine eigene Rahmenfarbe gewählt
+   wurde. Der heutige Tag bekommt zusätzlich einen grauen Rahmen um denselben
+   Kasten (ungefüllt, falls nicht gleichzeitig Trainingstag).
+--------------------------------------------------- */
+function weekStripHTML(){
+  const WEEKDAY_LABELS = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  // Montag der aktuellen Woche ermitteln (getDay(): 0=So..6=Sa -> auf Mo-Start ummünzen)
+  const mondayOffset = (today.getDay() + 6) % 7;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - mondayOffset);
+
+  // Für jeden Tag der Woche: letzte an dem Tag absolvierte Einheit finden (lokale Kalendertage
+  // vergleichen, nicht UTC), um deren Kachel-Rahmenfarbe zu bestimmen.
+  const days = [];
+  for (let i = 0; i < 7; i++){
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const sessionsOnDay = sessions.filter(s => {
+      const sd = new Date(s.date);
+      return sd.getFullYear() === d.getFullYear() && sd.getMonth() === d.getMonth() && sd.getDate() === d.getDate();
+    });
+    let color = null;
+    if (sessionsOnDay.length){
+      const last = sessionsOnDay[sessionsOnDay.length - 1];
+      const tileColor = currentTileColor(last.mode);
+      color = tileColor ? tileColor.hex : cssVar('--accent');
+    }
+    const isToday = d.getTime() === today.getTime();
+    days.push({ label: WEEKDAY_LABELS[i], num: d.getDate(), color, isToday });
+  }
+
+  const daysHTML = days.map(d => {
+    const textColor = d.color ? contrastTextColor(d.color) : 'var(--text)';
+    const badgeStyle = d.color
+      ? `background:${d.color}; color:${textColor};`
+      : `background:none; color:var(--text);`;
+    const ringStyle = d.isToday ? `box-shadow:0 0 0 2px var(--border);` : '';
+    return `
+      <div class="week-strip-day${d.isToday ? ' week-strip-day-today' : ''}">
+        <div class="week-strip-label">${d.label}</div>
+        <div class="week-strip-num${d.color ? ' week-strip-num-filled' : ''}" style="${badgeStyle}${ringStyle}">${d.num}</div>
+      </div>
+    `;
+  }).join('');
+
+  return `<div class="week-strip">${daysHTML}</div>`;
+}
+
+/* ---------------------------------------------------
    NAVIGATION (Android-/Browser-Zurück-Taste)
 --------------------------------------------------- */
 function pushView(view, params){
@@ -3870,6 +3934,13 @@ function homeLayoutMode(){
   return (plan && plan.homeLayoutMode === 'historyFirst') ? 'historyFirst' : 'default';
 }
 
+// Ein-/Ausschalter für den Wochenstreifen ("Datumsanzeige") auf der Startseite —
+// standardmäßig an, in den Einstellungen genauso schmal wie "Training oben anzeigen"
+// abschaltbar (siehe renderSettings(), plan.weekStripEnabled).
+function isWeekStripEnabled(){
+  return !(plan && plan.weekStripEnabled === false);
+}
+
 function renderHome(){
   const allSorted = sessions.slice().reverse();
   const recent = allSorted.slice(0, 5);
@@ -3914,6 +3985,7 @@ function renderHome(){
       <div class="brand" style="margin-bottom:${isHistoryFirst ? '20px' : '14px'};">
         <h1>Trainingsplan</h1>
       </div>
+      ${isWeekStripEnabled() ? weekStripHTML() : ''}
       ${bodyHTML}
     </div>
   `;
@@ -7863,6 +7935,7 @@ function renderSettings(){
   const numberModeLabels = { system: 'Normale Tastatur', wheel: 'Scroll-Rad', keypad: 'Ziffernblock', combo: 'Rad + Block' };
   const zahlBadge = numberModeLabels[numberInputMode()] || '';
   const homeOnTop = homeLayoutMode() !== 'historyFirst';
+  const weekStripEnabled = isWeekStripEnabled();
   const ringOn = restRingEnabled();
 
   app.innerHTML = `
@@ -7958,6 +8031,13 @@ function renderSettings(){
     <div class="muscle-group-header settings-static-row" style="margin-top:14px;">
       <span class="mg-name">Training oben anzeigen</span>
       <button class="toggle-switch ${homeOnTop ? 'on' : ''}" id="homeLayoutToggle" type="button" role="switch" aria-checked="${homeOnTop}" aria-label="Training oben anzeigen">
+        <span class="toggle-knob"></span>
+      </button>
+    </div>
+
+    <div class="muscle-group-header settings-static-row" style="margin-top:10px;">
+      <span class="mg-name">Datumsanzeige</span>
+      <button class="toggle-switch ${weekStripEnabled ? 'on' : ''}" id="weekStripToggle" type="button" role="switch" aria-checked="${weekStripEnabled}" aria-label="Datumsanzeige">
         <span class="toggle-knob"></span>
       </button>
     </div>
@@ -8062,6 +8142,12 @@ function renderSettings(){
 
   document.getElementById('homeLayoutToggle').onclick = async () => {
     plan.homeLayoutMode = homeOnTop ? 'historyFirst' : 'default';
+    await saveJSON('plan', plan);
+    renderSettings();
+  };
+
+  document.getElementById('weekStripToggle').onclick = async () => {
+    plan.weekStripEnabled = !weekStripEnabled;
     await saveJSON('plan', plan);
     renderSettings();
   };
