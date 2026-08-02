@@ -139,6 +139,19 @@ html[data-theme="light"] #btnSummaryShare{ color:#000; border-color:#000; }
   font-family:'Bebas Neue', sans-serif; font-size:22px; letter-spacing:1px;
   padding: 20px;
 }
+/* "Nochmal trainieren": behält Größe/Typografie von .btn-primary, aber nur Umriss statt
+   ausgefüllter Fläche — Rand + Schrift in der Akzentfarbe, dazu Icon+Text nebeneinander statt
+   des zentrierten Blocktexts (gleiches Muster wie .settings-reset-btn für "App zurücksetzen"). */
+.btn-repeat{
+  background:none; color: var(--accent); border-color: var(--accent);
+  display:flex; align-items:center; justify-content:center; gap:9px;
+}
+.btn-repeat-icon{ flex-shrink:0; }
+/* Generisches Muster für Ghost-Buttons mit einem Icon vor dem Text (z. B. "Als PDF
+   exportieren") — Icon nutzt stroke="currentColor", färbt sich also automatisch in der
+   jeweiligen Button-Schriftfarbe statt eine eigene feste Farbe/Emoji-Darstellung zu haben. */
+.btn-icon-label{ display:flex; align-items:center; justify-content:center; gap:8px; }
+.btn-icon-label-icon{ flex-shrink:0; }
 .btn-danger{ background: var(--accent-2); border-color: var(--accent-2); color:#fff; }
 .btn-ghost{ background:none; color:var(--muted); border:1px solid var(--border); font-weight:500; }
 .btn-small{ padding:8px 14px; font-size:13px; width:auto; display:inline-block; }
@@ -210,6 +223,13 @@ html[data-theme="light"] #btnSummaryShare{ color:#000; border-color:#000; }
 .summary-pill-top{ display:flex; align-items:center; gap:7px; }
 .summary-pill-icon{ font-size:19px; line-height:1; flex-shrink:0; }
 .summary-pill-icon-img{ width:19px; height:19px; flex-shrink:0; object-fit:contain; }
+/* Bizeps-/Warndreieck-Icon sind schwarz gezeichnet (siehe ICON_BICEPS/ICON_WARNING) — im
+   dunklen Standard-Modus per filter:invert(1) weiss dargestellt, im Light Mode unveraendert,
+   gleiches Muster wie beim Zurück-Pfeil/Bearbeiten-Stift. */
+.history-empty-icon{ width:16px; height:16px; vertical-align:-3px; margin-left:2px; filter: invert(1); }
+html[data-theme="light"] .history-empty-icon{ filter: none; }
+.bodyweight-warning-icon{ width:18px; height:18px; flex-shrink:0; margin-top:1px; filter: invert(1); }
+html[data-theme="light"] .bodyweight-warning-icon{ filter: none; }
 .summary-pill-value{ font-family:'JetBrains Mono', monospace; font-size:20px; font-weight:700; color: var(--text); white-space:nowrap; }
 /* Bei Trainings ab 1h ist "H:MM:SS" (z. B. "1:19:32") deutlich breiter als "MM:SS" und sprengte
    bisher bei fester 20px-Schrift die Pill-Spalte (Ziffern liefen über die Trennlinie). Wird
@@ -282,6 +302,18 @@ html[data-theme="light"] #btnSummaryShare{ color:#000; border-color:#000; }
 .summary-row-icon{ font-size:18px; font-weight:700; flex-shrink:0; }
 .summary-row-icon-img{ width:22px; height:22px; flex-shrink:0; object-fit:contain; }
 .summary-actions{ display:flex; gap:10px; margin-top:16px; }
+/* Steckt die "Erfolge"-Liste in einem Akkordeon-Körper (Trainingsdetailseite), verlieren die
+   einzelnen Zeilen ihre eigene Karten-Umrandung — sonst entstünde eine Box-in-Box-Optik
+   (äußere Akkordeon-Karte + innere Zeilen-Karten). Stattdessen nur eine Trennlinie zwischen
+   den Zeilen, wie bei anderen Listen innerhalb einer Karte (z. B. der Muskelgruppen-Legende).
+   Zeilen AUSSERHALB eines Akkordeons (z. B. die Zusammenfassung direkt nach dem Training)
+   bleiben von dieser Regel unberührt und behalten ihre eigene Karten-Optik. */
+.muscle-group-body .summary-list{ margin-top:0; }
+.muscle-group-body .summary-row{
+  background:none; border:none; border-radius:0; margin-bottom:0;
+  padding:12px 14px; border-bottom:1px solid var(--border);
+}
+.muscle-group-body .summary-row:last-child{ border-bottom:none; }
 .summary-actions .btn{ flex:1; }
 .summary-print-meta{ display:none; }
 .period-row{ display:flex; gap:8px; margin: 4px 0 18px; }
@@ -334,6 +366,7 @@ html[data-theme="light"] #btnSummaryShare{ color:#000; border-color:#000; }
 .chart-title{ font-size:12px; text-transform:uppercase; letter-spacing:1px; color: var(--muted); margin-bottom:2px; }
 .chart-title-value{ font-family:'JetBrains Mono', monospace; font-size:22px; font-weight:700; margin-bottom:10px; }
 .chart-axis{ stroke: var(--border); stroke-width:1; }
+.chart-grid{ stroke: var(--border); stroke-width:1; opacity:0.5; }
 .chart-label{ font-family:'JetBrains Mono', monospace; font-size:10px; fill: var(--muted); }
 .chart-empty{ color: var(--muted); font-size:13px; text-align:center; padding: 26px 0; }
 .progress-summary{ display:flex; gap:18px; font-family:'JetBrains Mono', monospace; font-size:12px; color: var(--muted); margin: 4px 0 18px; }
@@ -605,20 +638,67 @@ html[data-theme="light"] #btnSummaryShare{ color:#000; border-color:#000; }
   display:flex; align-items:center; font-family:'JetBrains Mono', monospace; font-size:13px;
   color: var(--accent); font-weight:700; padding-top:2px;
 }
-.muscle-balance-chart-wrap{ display:flex; justify-content:center; margin:6px 0; }
+.muscle-balance-chart-wrap{ display:flex; justify-content:center; margin:6px 0; transition: opacity .28s ease, filter .28s ease; }
+.muscle-balance-chart-wrap.donut-chart-dim{ opacity:0.1; filter: grayscale(0.6); }
 .muscle-balance-charts-row{ display:flex; gap:10px; margin-top:2px; }
 .muscle-balance-chart-col{ flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; }
 .muscle-balance-chart-col .section-label{ margin:0 0 2px; text-align:center; }
-.muscle-balance-legend{ display:flex; flex-direction:column; gap:2px; }
+.pie-center-value{ font-family:'JetBrains Mono', monospace; font-size:22px; font-weight:700; fill: var(--text); }
+.pie-center-label{ font-family:'JetBrains Mono', monospace; font-size:11px; fill: var(--muted); text-transform:uppercase; letter-spacing:0.5px; }
+.muscle-balance-legend{
+  display:flex; flex-direction:column; background: var(--surface); border:1px solid var(--border);
+  border-radius: var(--radius); overflow:hidden; transition: opacity .28s ease, filter .28s ease;
+}
+.muscle-balance-legend.dimmed{ opacity:0.16; filter: grayscale(0.6); }
 .muscle-balance-legend-row{
-  display:flex; align-items:center; gap:10px; padding:11px 4px; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:12px; padding:12px 14px; border-bottom:1px solid var(--border);
 }
 .muscle-balance-legend-row:last-child{ border-bottom:none; }
 .muscle-balance-swatch{
-  width:20px; height:20px; border-radius:6px; flex-shrink:0; border:none; padding:0; cursor:pointer;
+  min-width:46px; flex-shrink:0; padding:5px 8px; border-radius:8px; cursor:pointer;
+  background: var(--surface-2); border:1px solid currentColor;
+  font-family:'JetBrains Mono', monospace; font-size:12px; font-weight:700; text-align:center;
 }
-.muscle-balance-legend-label{ flex:1; font-weight:600; }
-.muscle-balance-legend-value{ color: var(--muted); font-family:'JetBrains Mono', monospace; font-size:13px; }
+.muscle-balance-legend-label{ flex:1; min-width:0; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.muscle-balance-legend-values{
+  display:flex; flex-direction:column; align-items:flex-end; gap:1px; flex-shrink:0;
+}
+.muscle-balance-legend-value{ color: var(--muted); font-family:'JetBrains Mono', monospace; font-size:13px; white-space:nowrap; }
+.muscle-balance-legend-subpct{ opacity:0.65; font-size:11px; }
+/* ---------- Muskelgruppen-Verteilung: antippbare Donut-Segmente mit Übungs-Drilldown ---------- */
+.donut-seg{ cursor:pointer; transition: opacity .28s ease; }
+.donut-seg-dim{ opacity:0.08; }
+.donut-seg-hidden{ opacity:0; pointer-events:none; }
+.donut-subseg{
+  opacity:0; transform: scale(0.92); transform-box: fill-box; transform-origin: center;
+  transition: opacity .3s ease, transform .3s ease; cursor:pointer;
+}
+.donut-subseg.donut-subseg-in{ opacity:1; transform: scale(1); }
+.pie-center-group{
+  transition: opacity .25s ease, transform .25s ease;
+  transform-box: fill-box; transform-origin: center;
+}
+.pie-center-hidden{ opacity:0; transform: translateY(12px); }
+.muscle-balance-breakdown{
+  margin-top:16px; opacity:0; transform: translateY(-6px);
+  transition: opacity .25s ease, transform .25s ease;
+}
+.muscle-balance-breakdown.open{ opacity:1; transform: translateY(0); }
+.muscle-balance-breakdown-header{
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:8px; padding:0 2px;
+}
+.muscle-balance-breakdown-title{ font-weight:700; }
+.muscle-balance-breakdown-close{
+  background:none; border:none; color: var(--muted); width:28px; height:28px;
+  display:flex; align-items:center; justify-content:center; border-radius:8px; flex-shrink:0;
+}
+.muscle-balance-breakdown-close:active{ background: var(--surface-2); }
+.muscle-balance-swatch-static{
+  min-width:46px; flex-shrink:0; padding:5px 8px; border-radius:8px;
+  background: var(--surface-2); border:1px solid currentColor;
+  font-family:'JetBrains Mono', monospace; font-size:12px; font-weight:700; text-align:center;
+}
 .add-set{
   background:none; border:none; color: var(--accent); font-size:13px; font-weight:600; padding:6px 0;
 }
@@ -704,6 +784,33 @@ html[data-theme="light"] #btnSummaryShare{ color:#000; border-color:#000; }
   border-radius:8px; width:32px; height:32px; font-size:16px;
 }
 .add-exercise-modal-body{ overflow-y:auto; padding:12px 16px 24px; }
+/* ---------- Körpergewicht-Popup: eigene, kompaktere Optik statt der schweren Standard-
+   Elemente (großer umrandeter Schließen-Button, überdimensionierter .btn-primary-Speichern-
+   Knopf in Bebas-Neue-Heldenoptik) — bewusst scoped auf dieses eine Popup, andere Dialoge, die
+   dieselbe .add-exercise-modal-Hülle nutzen, bleiben unverändert. ---------- */
+.bodyweight-prompt-close{
+  background:none; border:none; color: var(--muted); width:32px; height:32px;
+  display:flex; align-items:center; justify-content:center; border-radius:8px; flex-shrink:0;
+}
+.bodyweight-prompt-close:active{ background: var(--surface-2); }
+.bodyweight-prompt-field{ position:relative; }
+.bodyweight-prompt-input{
+  width:100%; box-sizing:border-box; padding:14px 40px 14px 14px; border-radius:10px;
+  border:1px solid var(--border); background: var(--surface-2); color: var(--text);
+  font-size:16px; font-family:'Inter', system-ui, sans-serif;
+}
+.bodyweight-prompt-input:focus{ outline:2px solid var(--accent); outline-offset:1px; border-color: var(--accent); }
+.bodyweight-prompt-unit{
+  position:absolute; right:14px; top:50%; transform:translateY(-50%);
+  color: var(--muted); font-size:14px; font-family:'JetBrains Mono', monospace; pointer-events:none;
+}
+/* "Speichern" bewusst NICHT in der großen .btn-primary-Heldenoptik (Bebas Neue, 22px, üppiges
+   Padding) — in diesem kompakten Popup neben dem gleich breiten "Später"-Button wirkte das
+   unverhältnismäßig klobig. Gleiche Größe wie .btn-ghost, nur gefüllt in der Akzentfarbe. */
+.bodyweight-prompt-save{
+  background: var(--accent); color: var(--accent-contrast, #121316); border-color: var(--accent);
+  font-weight:700; font-size:16px;
+}
 /* Kleiner Abstand zwischen den gestapelten Muskelgruppen-Akkordeons im "Übung hinzufügen"-
    Dialog — ohne diese Regel kleben abgeklappte Köpfe direkt aneinander (siehe Screenshot-
    Feedback), da .muscle-group-header selbst kein Standard-Margin mitbringt. Der erste Kopf
@@ -1151,10 +1258,11 @@ html[data-theme="light"] .plan-row-edit-btn img{ filter: none; }
 #modeEditRows .muscle-group-header, #freeRows .muscle-group-header{ touch-action: none; }
 .muscle-group-header .mg-name{
   font-family:'Bebas Neue', sans-serif; font-size:16px; letter-spacing:0.5px;
+  flex:1 1 auto; min-width:0;
 }
 .muscle-group-header .mg-meta{
   font-family:'JetBrains Mono', monospace; font-size:11px; color: var(--muted);
-  display:flex; align-items:center; gap:8px;
+  display:flex; align-items:center; gap:8px; flex:0 0 auto; white-space:nowrap; margin-left:10px;
 }
 /* Der Aufklapp-Pfeil selbst, unabhängig vom Rest von .mg-meta (das ggf. noch einen kleinen
    Badge-Text davor zeigt) — deutlich größer, damit er als Aufklapp-Indikator klar erkennbar
@@ -1357,19 +1465,7 @@ html[data-theme="light"] .plan-row-edit-btn img{ filter: none; }
 .detail-header h2{ font-family:'Bebas Neue', sans-serif; font-size:30px; margin:0 0 4px; letter-spacing:1px; }
 .detail-stats{ display:flex; gap:8px 18px; flex-wrap:wrap; font-family:'JetBrains Mono', monospace; font-size:13px; color: var(--muted); line-height:1.3; }
 .detail-stats span{ white-space:nowrap; }
-.detail-full-toggle{
-  width:100%; background:none; border:1px dashed var(--border); color: var(--muted);
-  border-radius: var(--radius); padding:14px; font-size:14px; font-weight:600;
-  margin-top:18px; text-align:center; display:flex; align-items:center; justify-content:center; gap:8px;
-}
-.detail-full-toggle:active{ color: var(--text); border-color: var(--muted); }
-.detail-full-toggle-chevron{ transition: transform .2s ease; display:inline-block; }
-.detail-full-toggle-chevron.open{ transform: rotate(180deg); }
-.detail-full-table-wrap{
-  overflow: hidden; max-height:0; transition: max-height .25s ease;
-}
-.detail-full-table-wrap.open{ max-height: 6000px; }
-table.detail-table{ width:100%; border-collapse: collapse; margin-top: 14px; }
+table.detail-table{ width:100%; border-collapse: collapse; margin-top: 4px; }
 table.detail-table th{
   text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:1px; color: var(--muted);
   padding: 8px 6px; border-bottom:1px solid var(--border);
@@ -1416,7 +1512,7 @@ table.detail-table tbody tr:first-child td{ border-top:none; }
   .time-box{ display:none; }
   .app{ padding:0; max-width:100%; min-height:0; }
   table.detail-table td, table.detail-table th{ color:#000; border-color:#999; }
-  .detail-full-table-wrap{ max-height:none !important; overflow:visible !important; }
+  #fullTableWrap{ display:block !important; }
 
   .brand h1{ color:#000; font-size:26px; }
   .summary-print-meta{
@@ -1621,6 +1717,12 @@ const ICON_COLORWHEEL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwC
 const ICON_BACK_ARROW = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAACO0lEQVR42u2aPWsUURSGnzPZgIXYuOCmtVNRFPwlVlHwL1jY2PlT/FZCgtFO0YiVYCE2KlhEVCwsRCx1TXYeC+/guLgfCevunbAHhmEul+F9z33vuWfOGWi4xaRepAawUBvqRYSN8EICP/Z4ViugFhFRqvuAc8Ax4D1wOyK+qZHtSqgL6b6kvvBv21QPq6EWuYN/nUD/VLfUH+l5tT43R/CdGvitmvd76fqgtqa1HyYFXnU7EXijFjmCXxoCXrWb7pfS/FZTPF/tA9VVdSGLDbwL8GuVdGYunx3Iph98kRP4zi7AF02WTdFk2cw9P482O4jzM5dNVOAjoqd2gI2UEm8Dg07QdeAsYHpHOW1/A2VEOK7ny5TbfFUv5/QhVa1AB3gCHB3geYEusAI8BfbXxqdtJfAuIjYAQj0EPAJOjJBNbrYBLId6FzgzJniBXiYEWsBKqN30UNAsK4GtYkY6nlgUbQH3gOUxJVTOIGQOkvIisB7qQeAhcLqRmziF0TbwGDg5JIx+B9aA58CBNOYkq3tjeD0SvrcR8aA/hWirL0ccZJ/VizkeZFUq0U5nwqkRcloBzqfI5QwCwZ9U4h/J3KiVqJK5W1VpMceyyTAS9Yz05pxEJiRu7AUS1+ckMiFxbS+QuLoXSFypSGSTPe2CxIU0v9U0ElWD41VWMtoBiXxbTCNI9Df57tfnZmd9JJ71yeijeuR/10wn2ehe5Hej+zjwCbgTEV+ybnTXPywGkZtKbXSCJJr5s8cs7RfGzkEyzY49KAAAAABJRU5ErkJggg==';
 const ICON_EDIT = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAFJklEQVR42u2bz4scRRTHPz3Tk03QaJRgLooHUTxIFNFIPMTsRTErRhCVCCoiQv4AMSAec9BDgiAmOeQHBvXg78RdMJqoKOohEhVRNBKIUYQseFhiNmZ7ZtpDv+e8Lbonk53q6ZpxC4qeH1XV9f2+b73qelUdMRqpDrSAGHgQ2ABcD7SBn4FJ4H2n7MikWK53AkeBtCB/Dtzs1Bn61JDrA8CcAG3mgE/kegZYPyokWPBNkbWC/xB4Dnge+FR+U4LOAuNmOOSmmjDUb44GCD4FzgOP5JR/2iihDfwN3FYEPBoiyycCPgGmgQkjb81q5UcdJfwCLI9zPCnAamAtcC2wVCpcTIqA08ArIjkW0EYR+ATYCLwlBkuAMeA7YErKNJ37NYA3BON+qXMDsBlnLNwOHDKS6jfv8Ohw1PIbjeVdJ/daFyVr/f1Sti2k/Qf+yQt40oXkfZ4IcMFr/2aA7834TwVgHgmx/Ha3IWA2FiY3AHvlx1RI+RX4QRzGxSSV3jTwgnxueZL92wIqEmM9BHwBHJEhew54TOo9LoBxjDJj2h4DuAL43UwjM9LIkoAcnrV8S6w9YcpdBnwpAGcLlKBtPWUUMA2wxch+zsyRkSihqmmwF/CxsXI3EurSl2XAT8Z/HAA4ZqS/VyosqXg67BW8nb57UcKk4y/GkTGuBEyYh6BhAd+NhHNy3Q286fy2Syu2DQFrLvSIGCj4biTMGQf4j1ynROV1jENI5TmgKgL6Be+SsBz4SLDN5YDX2SQIAnyBVwJqguHdAstHhqjKCfANXqe8yV7AV01AWeA/cGaCQvBVEhAE+KoICAZ8FQQEBX7QBAQHfpAEBAl+UAQEC34QBAQNvmwCggdfJgFDAb4sAoYGfBkE1HOit8GC902AduQ+A15DbUGC90mArq8vIdsU0Xh9AtzjDI1gwPskQOusN0FWHfvbnOBkMOB9EqDS3irtJczftdnZAwkDB+97CAB8bRTQcoIS3UioBLwvArRTV5uoa0pn58aCySOhMvC+CFD5bzLgT0unV5DtPeSRUDNEVALeNwH7DAHvmE6v7EICArIS8D4IiAyIE4YA3XsfyyFBfcIOUchUyeB1my/3AEi/BGjZW007TeBGI/OG3HgVnZNcOjuc6jV6G6oCVP7PGOv/KKAbOYxfA/wm92yWDF4fzq4kOzxxkOzUi1Vu3wRoRw8ZAl5yylwHPAG8TnbuYFbAJ3Q2KsuwvBpni+nbbvtf7IHhtjC8xhB6lGzn9V7gLrIDimNd2jkIPCxrhpq06TOtoHNI43LTz74JqEnDd8hNtOMvkx28KEoJ2emTz4CPyc71WUJ9p5ZRdStPIv0oAFns6JiuF4A/BXwFHJaHo+M5baUl+bmo4HPfBGiHV4sa7LGaMzLtfSL5WzpH5uz9rQ8aePJ1EGK7OLpZskPJh2VN8EfOlKkyV8VUmmIPYwuyndgjJvzlPoColYM7pu5LATVZBFlZp6FYeRAEtI1zCRpwWQRQlRPzId3/dVokYJGARQIWCUjM92WE/8rMQtYBl5rv5+2aoAb8af5cK9PZKCkjFVz6+aRbYI/80ZIVm66XG/IYO4w5Nguz+5n/Fsw6N+hzC50NzFQWMleNiPXHgb/oxB+P0QmOzlsbvwg8SxabWyrD4lXgG1nWRkM25ldJjGKTfG+KKtZJLGLe+8Mqm/ectfkoZPvy12ZX+pYxDURuFYunI5SPkx3WKARvrylwE9krdONkIezGEHr9s2Rvhh6QoTxDwWvz/wImJB8R7Y+RxwAAAABJRU5ErkJggg==';
 const ICON_RECORD = 'data:image/png;base64,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';
+// Vom Nutzer bereitgestelltes Bizeps-Icon (schwarz gezeichnet, wie die anderen Nutzer-Icons per filter:invert(1) im Dark Mode weiss dargestellt, im Light Mode unveraendert).
+const ICON_BICEPS = 'data:image/png;base64,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';
+// Vom Nutzer bereitgestelltes Warndreieck-Icon, gleiches Invert-Muster wie ICON_BICEPS.
+const ICON_WARNING = 'data:image/png;base64,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';
+// Vom Nutzer bereitgestelltes Flammen-Icon (bereits farbig rot/orange gezeichnet), wird NICHT invertiert.
+const ICON_FLAME = 'data:image/png;base64,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';
 
 /* ---------------------------------------------------
    Default plan
@@ -2053,6 +2155,20 @@ function currentAccentColor(){
   const id = plan && plan.accentColorId;
   return allAccentSwatches().find(c => c.id === id) || ACCENT_COLORS[0];
 }
+// Eigene Hintergrundfarbe (Darstellung → Einstellungen), unabhängig von der Akzentfarbe.
+// Nutzt dieselbe Farbpalette + Favoriten wie der Akzentfarben-Picker. plan.bgColorId === 'default'
+// (oder gar nicht gesetzt) bedeutet: kein eigener Hintergrund, es gilt der normale Hell-/
+// Dunkelmodus-Standard aus dem CSS (:root / html[data-theme="light"]) — daher hier null zurück,
+// damit applyTheme() die Inline-Override wieder entfernen kann statt eine Farbe zu erzwingen.
+function currentBgColor(){
+  if (plan && plan.bgColorId === 'custom' && plan.bgCustomHex){
+    return { id: 'custom', name: 'Eigene Farbe', hex: plan.bgCustomHex };
+  }
+  if (plan && plan.bgColorId && plan.bgColorId !== 'default'){
+    return allAccentSwatches().find(c => c.id === plan.bgColorId) || null;
+  }
+  return null;
+}
 function currentThemeMode(){
   return (plan && plan.themeMode === 'light') ? 'light' : 'dark';
 }
@@ -2143,6 +2259,9 @@ function applyTheme(){
   const accentHex = currentAccentColor().hex;
   document.documentElement.style.setProperty('--accent', accentHex);
   document.documentElement.style.setProperty('--accent-contrast', contrastTextColor(accentHex));
+  const bgColor = currentBgColor();
+  if (bgColor) document.documentElement.style.setProperty('--bg', bgColor.hex);
+  else document.documentElement.style.removeProperty('--bg');
 }
 
 async function init(){
@@ -3199,14 +3318,19 @@ function openBodyWeightPrompt(){
     <div class="add-exercise-modal" style="max-height:none;">
       <div class="add-exercise-modal-header">
         <div class="add-exercise-modal-title">Körpergewicht</div>
-        <button class="add-exercise-modal-close" id="bodyWeightPromptClose" aria-label="Später">✕</button>
+        <button class="bodyweight-prompt-close" id="bodyWeightPromptClose" aria-label="Später">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18"></path><path d="M6 6l12 12"></path></svg>
+        </button>
       </div>
       <div class="new-exercise-modal-body">
-        <input type="text" inputmode="decimal" id="bodyWeightPromptInput" enterkeyhint="done" placeholder="z. B. 78,5" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-size:16px;">
+        <div class="bodyweight-prompt-field">
+          <input type="text" inputmode="decimal" id="bodyWeightPromptInput" enterkeyhint="done" placeholder="z. B. 78,5" class="bodyweight-prompt-input">
+          <span class="bodyweight-prompt-unit">kg</span>
+        </div>
       </div>
       <div class="add-exercise-modal-header" style="border-top:1px solid var(--border); border-bottom:none; gap:10px;">
         <button class="btn btn-ghost" id="bodyWeightPromptSkip" style="flex:1;">Später</button>
-        <button class="btn btn-primary" id="bodyWeightPromptSave" style="flex:1;">Speichern</button>
+        <button class="btn bodyweight-prompt-save" id="bodyWeightPromptSave" style="flex:1;">Speichern</button>
       </div>
     </div>
   `;
@@ -3502,6 +3626,7 @@ function resetAllAccordions(){
   planGroupOpen = new Set();
   statsChartOpen = new Set();
   exerciseProgressChartOpen = new Set();
+  muscleBalanceDrilldown = null;
 }
 
 // Rendert die zu einem State-Objekt ({ view, params }) gehörende Seite — genutzt vom
@@ -3592,6 +3717,7 @@ window.addEventListener('popstate', (event) => {
 --------------------------------------------------- */
 let historyExpanded = false;
 let accentPickerOpen = false;
+let bgPickerOpen = false;
 // Merkt sich, welche Abschnitte auf der Einstellungen-Seite gerade aufgeklappt sind
 // (Akkordeon pro Abschnitt, siehe renderSettings()). Standardmäßig alles eingeklappt,
 // exakt wie beim Muskelgruppen-Akkordeon im Übungen-Tab.
@@ -4078,7 +4204,7 @@ function renderStatsChart(metric){
     <div class="training-widget">
       <div class="training-widget-header">
         <h3>Einheiten pro Monat</h3>
-        <button class="training-widget-link" id="btnWorkouts">Workouts 🗂</button>
+        <button class="training-widget-link" id="btnWorkouts" style="display:flex; align-items:center; gap:6px;"><img class="section-label-icon" src="${ICON_HISTORY}" alt="">History</button>
       </div>
       ${buildBarChart(sessionsPerMonth().map(m => ({ label: m.label, value: m.count })), cssVar('--accent-3'))}
     </div>
@@ -4105,7 +4231,7 @@ function renderStatsChart(metric){
   app.innerHTML = `
     <div class="back-row" style="margin-top:0;"><button class="back-btn-icon" id="btnBack" aria-label="Zurück"><img src="${ICON_BACK_ARROW}" alt=""></button></div>
     <div class="progress-summary" style="margin-top:18px;">
-      <span>${sessions.length} Einheiten gesamt</span>
+      <span>${sessions.length} ${sessions.length === 1 ? 'Einheit' : 'Einheiten'} gesamt</span>
       <span>Gesamt: ${totalLabel}</span>
     </div>
     <div class="period-row">
@@ -4427,7 +4553,11 @@ function renderExerciseSessionDetail(sessionId, exerciseId){
 // Baut Titel + eine groß hervorgehobene Zahl in der Diagrammfarbe darunter (der letzte/
 // aktuellste Datenpunkt) — die kleinen Wert-Beschriftungen direkt an den Punkten im Diagramm
 // selbst sind auf dem Handy schwer lesbar, diese Zeile macht den wichtigsten Wert auf einen
-// Blick erkennbar, ohne die Punktbeschriftungen deshalb zu entfernen.
+// Blick erkennbar, ohne die Punktbeschriftungen deshalb zu entfernen. Zusätzlich ein kleines
+// Trend-Delta gegenüber dem VORHERIGEN Datenpunkt (z. B. "+2,5 kg"/"−0:15"), grün bei Anstieg,
+// in der Warnfarbe bei Rückgang — nutzt denselben Formatter wie der Hauptwert, daher passend
+// zur jeweiligen Einheit (kg, Sekunden als mm:ss, reine Zahl). Bleibt aus, wenn es (noch) keinen
+// Vorgänger-Punkt gibt oder sich der Wert nicht verändert hat.
 // Kompaktes, zugeklapptes Akkordeon für ein einzelnes Diagramm — exakt dasselbe schmale
 // Kopfzeilen-Muster wie in den Einstellungen (settingsAccordionSection()): Titel links, der
 // hervorgehobene letzte Wert (in der Diagrammfarbe) + Pfeil rechts, auch im zugeklappten
@@ -4436,11 +4566,19 @@ function chartAccordionHTML(openSet, key, title, points, color, formatter, chart
   const isOpen = openSet.has(key);
   const fmt = formatter || (v => v);
   const last = points.length ? points[points.length - 1].value : null;
+  const prev = points.length > 1 ? points[points.length - 2].value : null;
+  let deltaHTML = '';
+  if (last !== null && prev !== null && last !== prev){
+    const delta = last - prev;
+    const deltaColor = delta > 0 ? '#7cc576' : 'var(--accent-2)';
+    const sign = delta > 0 ? '+' : '−';
+    deltaHTML = `<span style="font-family:'JetBrains Mono', monospace; font-size:11px; font-weight:700; color:${deltaColor}; margin-left:5px;">${sign}${fmt(Math.abs(delta))}</span>`;
+  }
   return `
     <div class="muscle-group" style="margin-top:10px;">
       <button class="muscle-group-header" data-chartacc="${key}" type="button">
         <span class="mg-name">${title}</span>
-        <span class="mg-meta">${last !== null ? `<span style="font-family:'JetBrains Mono', monospace; font-weight:700; color:${color};">${fmt(last)}</span>` : ''} <span class="mg-arrow">${isOpen ? '▾' : '▸'}</span></span>
+        <span class="mg-meta">${last !== null ? `<span style="font-family:'JetBrains Mono', monospace; font-weight:700; color:${color};">${fmt(last)}</span>${deltaHTML}` : ''} <span class="mg-arrow">${isOpen ? '▾' : '▸'}</span></span>
       </button>
       <div class="muscle-group-body" style="display:${isOpen ? 'block' : 'none'}">
         ${chartSVG}
@@ -4459,6 +4597,10 @@ function chartTitleHTML(title, points, color, formatter){
 function buildLineChart(points, color, valueFormatter){
   const fmt = valueFormatter || (v => v);
   if (!points.length) return '<div class="chart-empty">Noch keine Daten — nach der ersten geloggten Einheit erscheint hier der Verlauf.</div>';
+  // Mit nur einem Punkt lässt sich kein Trend zeigen — der Punkt würde (Skala startet bei 0)
+  // meist ganz oben im Diagramm landen und darunter nur gähnende Leere lassen. Ein kurzer
+  // Hinweis statt eines fast leeren Achsenkreuzes ist an dieser Stelle klarer.
+  if (points.length === 1) return '<div class="chart-empty">Noch zu wenig Daten für einen Verlauf — ab der zweiten geloggten Einheit erscheint hier der Trend.</div>';
   const w = 560, h = 150, padL = 8, padR = 8, padT = 20, padB = 24;
   const innerW = w - padL - padR, innerH = h - padT - padB;
   const values = points.map(p => p.value);
@@ -4474,11 +4616,22 @@ function buildLineChart(points, color, valueFormatter){
   const path = coords.map((c,i) => (i===0?'M':'L') + c.x.toFixed(1) + ',' + c.y.toFixed(1)).join(' ');
   const dots = coords.map(c => `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="3.5" fill="${color}"/>`).join('');
   const everyN = Math.max(1, Math.ceil(coords.length/6));
-  const xLabels = coords.map((c,i) => (i % everyN === 0 || i === coords.length-1)
-    ? `<text class="chart-label" x="${c.x.toFixed(1)}" y="${h-6}" text-anchor="middle">${c.label}</text>` : '').join('');
+  // Erste/letzte Beschriftung an der Achse ausrichten statt zentriert auf den Punkt — sonst
+  // ragt die Hälfte des Textes über den linken/rechten Rand der Zeichenfläche hinaus und wird
+  // dort abgeschnitten (sichtbar z. B. beim allerersten Datum ganz links).
+  const xLabels = coords.map((c,i) => {
+    if (!(i % everyN === 0 || i === coords.length-1)) return '';
+    const anchor = i === 0 ? 'start' : (i === coords.length-1 ? 'end' : 'middle');
+    return `<text class="chart-label" x="${c.x.toFixed(1)}" y="${h-6}" text-anchor="${anchor}">${c.label}</text>`;
+  }).join('');
   const valueLabels = coords.map(c =>
     `<text class="chart-label" style="fill:${color};font-weight:700" x="${c.x.toFixed(1)}" y="${(c.y-8).toFixed(1)}" text-anchor="middle">${fmt(c.value)}</text>`).join('');
+  // Zwei dezente Hilfslinien zusätzlich zur Grundlinie, damit sich Werte grob einordnen lassen,
+  // auch ohne an jedem einzelnen Punkt die Beschriftung lesen zu müssen.
+  const gridLines = [0.33, 0.66].map(f =>
+    `<line class="chart-grid" x1="${padL}" y1="${(padT+innerH*f).toFixed(1)}" x2="${w-padR}" y2="${(padT+innerH*f).toFixed(1)}"/>`).join('');
   return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" role="img" aria-label="Verlaufsdiagramm">
+    ${gridLines}
     <line class="chart-axis" x1="${padL}" y1="${padT+innerH}" x2="${w-padR}" y2="${padT+innerH}"/>
     <path d="${path}" fill="none" stroke="${color}" stroke-width="2"/>
     ${dots}${valueLabels}${xLabels}
@@ -4511,8 +4664,8 @@ function buildBarChart(points, color){
 // Feste Farbpalette für die Muskelgruppen-Verteilung — bewusst NICHT von der frei wählbaren
 // App-Akzentfarbe abhängig, damit die Kuchen-Segmente immer klar unterscheidbar bleiben.
 const MUSCLE_GROUP_COLORS = {
-  Beine: '#6f9bd1', Rücken: '#b3453a', Brust: '#d9c74a', Schultern: '#7cc576',
-  Arme: '#c77dd1', Bauch: '#e08a3c', Sonstige: '#8a8e95'
+  Beine: '#7099c2', Rücken: '#c27b70', Brust: '#c2a970', Schultern: '#70c2ad',
+  Arme: '#a070c2', Bauch: '#c27099', Sonstige: '#8a8e95'
 };
 // Individuell gewählte Muskelgruppen-Farbe (siehe openMuscleGroupColorPicker()) hat Vorrang
 // vor der festen Standardpalette — genau wie currentAccentColor()/currentTileColor() für den
@@ -4521,29 +4674,135 @@ function muscleGroupColor(group){
   const custom = plan.muscleGroupColors && plan.muscleGroupColors[group];
   return custom || MUSCLE_GROUP_COLORS[group] || '#8a8e95';
 }
-function buildPieChart(segments, displaySize){
+function buildPieChart(segments, displaySize, centerValue, centerLabel){
   const total = segments.reduce((a,s) => a + s.value, 0);
   if (!total) return '<div class="chart-empty">Noch keine Daten — nach den ersten geloggten Sätzen erscheint hier die Verteilung.</div>';
-  const size = 220, radius = 100, cx = size/2, cy = size/2;
+  const size = 220, outerR = 100, innerR = 62, cx = size/2, cy = size/2;
   const renderSize = displaySize || size;
   const toRad = a => (a * Math.PI) / 180;
+  const point = (r, a) => [cx + r * Math.cos(toRad(a)), cy + r * Math.sin(toRad(a))];
   let angle = -90; // oben beginnen
-  const paths = segments.filter(s => s.value > 0).map(s => {
-    const fraction = s.value / total;
-    const startAngle = angle;
-    const endAngle = angle + fraction * 360;
-    angle = endAngle;
+  const gapDeg = 2.5; // schmale Lücke zwischen den Segmenten statt nahtlos aneinander
+  const visible = segments.filter(s => s.value > 0);
+  const arcSegment = (startAngle, endAngle, color) => {
     const large = (endAngle - startAngle) > 180 ? 1 : 0;
-    const x1 = cx + radius * Math.cos(toRad(startAngle));
-    const y1 = cy + radius * Math.sin(toRad(startAngle));
-    const x2 = cx + radius * Math.cos(toRad(endAngle));
-    const y2 = cy + radius * Math.sin(toRad(endAngle));
-    // Vollständiger Kreis (ein einziges Segment mit 100%) lässt sich nicht als ein einzelner
-    // Arc-Pfad zeichnen (Start- und Endpunkt fallen zusammen) — dafür einen echten Kreis nutzen.
-    if (fraction >= 0.9999) return `<circle cx="${cx}" cy="${cy}" r="${radius}" fill="${s.color}"/>`;
-    return `<path d="M${cx},${cy} L${x1.toFixed(2)},${y1.toFixed(2)} A${radius},${radius} 0 ${large} 1 ${x2.toFixed(2)},${y2.toFixed(2)} Z" fill="${s.color}"/>`;
+    const [x1o,y1o] = point(outerR, startAngle);
+    const [x2o,y2o] = point(outerR, endAngle);
+    const [x2i,y2i] = point(innerR, endAngle);
+    const [x1i,y1i] = point(innerR, startAngle);
+    return `<path d="M${x1o.toFixed(2)},${y1o.toFixed(2)} A${outerR},${outerR} 0 ${large} 1 ${x2o.toFixed(2)},${y2o.toFixed(2)} L${x2i.toFixed(2)},${y2i.toFixed(2)} A${innerR},${innerR} 0 ${large} 0 ${x1i.toFixed(2)},${y1i.toFixed(2)} Z" fill="${color}"/>`;
+  };
+  const paths = visible.map(s => {
+    const fraction = s.value / total;
+    const rawStart = angle, rawEnd = angle + fraction * 360;
+    angle = rawEnd;
+    // Ein einziges Segment mit 100% als EIN 360°-Arc-Pfad zeichnen zu wollen, ergäbe identische
+    // Start-/Endpunkte — SVG lässt einen Arc mit gleichem Start-/Endpunkt komplett weg (per
+    // Spec), der Ring würde also unsichtbar bleiben; deshalb hier in zwei Halbkreise aufgeteilt,
+    // die zusammen den vollen Ring lückenlos ergeben (keine Segment-Lücke in diesem Sonderfall).
+    if (visible.length === 1) return arcSegment(rawStart, rawStart + 180, s.color) + arcSegment(rawStart + 180, rawEnd, s.color);
+    return arcSegment(rawStart + gapDeg/2, rawEnd - gapDeg/2, s.color);
   }).join('');
-  return `<svg viewBox="0 0 ${size} ${size}" width="${renderSize}" height="${renderSize}" role="img" aria-label="Muskelgruppen-Verteilung">${paths}</svg>`;
+  const centerHTML = (centerValue != null) ? `
+    <text x="${cx}" y="${cy - 4}" text-anchor="middle" class="pie-center-value">${centerValue}</text>
+    <text x="${cx}" y="${cy + 16}" text-anchor="middle" class="pie-center-label">${centerLabel || ''}</text>
+  ` : '';
+  return `<svg viewBox="0 0 ${size} ${size}" width="${renderSize}" height="${renderSize}" role="img" aria-label="Muskelgruppen-Verteilung">${paths}${centerHTML}</svg>`;
+}
+
+/* ---------- Interaktiver Donut mit Übungs-Drilldown (Muskelgruppen-Verteilung) ----------
+   Nutzt dieselbe Geometrie wie buildPieChart (Größe 220, Außenradius 100, Innenradius 62),
+   baut die Segmente aber als einzeln antippbare <path>-Elemente mit data-group, damit ein
+   Klick per direkter DOM-Manipulation (siehe applyMuscleDonutSelection()) animiert werden
+   kann — ein kompletter innerHTML-Neuaufbau würde jede CSS-Transition sofort abbrechen. */
+const DONUT_SIZE = 220, DONUT_OUTER_R = 100, DONUT_INNER_R = 62, DONUT_CX = 110, DONUT_CY = 110, DONUT_GAP_DEG = 2.5;
+function donutToRad(a){ return (a * Math.PI) / 180; }
+function donutPoint(r, a){ return [DONUT_CX + r * Math.cos(donutToRad(a)), DONUT_CY + r * Math.sin(donutToRad(a))]; }
+// Baut den Pfad für EIN Ringsegment zwischen zwei Winkeln — bei einem (fast) vollen Kreis
+// (einziges Segment) in zwei Halbkreis-Teilpfade aufgeteilt, da ein 360°-Arc mit identischem
+// Start-/Endpunkt sonst laut SVG-Spec komplett wegfällt (siehe buildPieChart weiter oben).
+function donutArcPath(startAngle, endAngle){
+  if (endAngle - startAngle >= 359.99){
+    const mid = startAngle + (endAngle - startAngle) / 2;
+    return donutArcPath(startAngle, mid) + ' ' + donutArcPath(mid, endAngle);
+  }
+  const large = (endAngle - startAngle) > 180 ? 1 : 0;
+  const [x1o,y1o] = donutPoint(DONUT_OUTER_R, startAngle);
+  const [x2o,y2o] = donutPoint(DONUT_OUTER_R, endAngle);
+  const [x2i,y2i] = donutPoint(DONUT_INNER_R, endAngle);
+  const [x1i,y1i] = donutPoint(DONUT_INNER_R, startAngle);
+  return `M${x1o.toFixed(2)},${y1o.toFixed(2)} A${DONUT_OUTER_R},${DONUT_OUTER_R} 0 ${large} 1 ${x2o.toFixed(2)},${y2o.toFixed(2)} L${x2i.toFixed(2)},${y2i.toFixed(2)} A${DONUT_INNER_R},${DONUT_INNER_R} 0 ${large} 0 ${x1i.toFixed(2)},${y1i.toFixed(2)} Z`;
+}
+// Berechnet Start-/Endwinkel je Segment (inkl. Lücke) — wird sowohl beim ersten Aufbau als
+// auch beim Aufteilen des angetippten Segments in Übungs-Unterabschnitte gebraucht, damit
+// beide exakt dieselbe Position/Reihenfolge zugrunde legen.
+function donutAngleRanges(segments){
+  const total = segments.reduce((a,s) => a + s.value, 0);
+  const visible = segments.filter(s => s.value > 0);
+  if (!total || !visible.length) return [];
+  let angle = -90;
+  return visible.map(s => {
+    const fraction = s.value / total;
+    const rawStart = angle, rawEnd = angle + fraction * 360;
+    angle = rawEnd;
+    const startAngle = visible.length > 1 ? rawStart + DONUT_GAP_DEG/2 : rawStart;
+    const endAngle = visible.length > 1 ? rawEnd - DONUT_GAP_DEG/2 : rawEnd;
+    return { label: s.label, value: s.value, color: s.color, startAngle, endAngle };
+  });
+}
+// Hellere/dunklere Abstufung der Muskelgruppen-Farbe für die Übungs-Unterabschnitte, damit sie
+// erkennbar zur ausgewählten Muskelgruppe gehören, aber untereinander unterscheidbar bleiben.
+function shadeMuscleColor(hex, index){
+  const { h, s, v } = hexToHsv(hex);
+  const dir = index % 2 === 0 ? 1 : -1;
+  const magnitude = Math.ceil((index + 1) / 2);
+  const newV = Math.min(94, Math.max(32, v + dir * magnitude * 13));
+  const newS = Math.max(30, s - Math.min(index, 5) * 5);
+  return hsvToHex(h, newS, newV);
+}
+function buildInteractiveDonut(segments, displaySize, metric, centerValue, centerLabel){
+  const total = segments.reduce((a,s) => a + s.value, 0);
+  if (!total) return '<div class="chart-empty">Noch keine Daten — nach den ersten geloggten Sätzen erscheint hier die Verteilung.</div>';
+  const renderSize = displaySize || DONUT_SIZE;
+  const ranges = donutAngleRanges(segments);
+  const paths = ranges.map(r =>
+    `<path class="donut-seg" data-group="${r.label}" data-metric="${metric}" fill="${r.color}" d="${donutArcPath(r.startAngle, r.endAngle)}"/>`
+  ).join('');
+  const centerHTML = `
+    <g class="pie-center-group" id="pieCenterDefault-${metric}">
+      <text x="${DONUT_CX}" y="${DONUT_CY - 4}" text-anchor="middle" class="pie-center-value">${centerValue}</text>
+      <text x="${DONUT_CX}" y="${DONUT_CY + 16}" text-anchor="middle" class="pie-center-label">${centerLabel || ''}</text>
+    </g>
+    <g class="pie-center-group pie-center-hidden" id="pieCenterSelected-${metric}">
+      <text x="${DONUT_CX}" y="${DONUT_CY - 4}" text-anchor="middle" class="pie-center-value" id="pieCenterSelectedValue-${metric}"></text>
+      <text x="${DONUT_CX}" y="${DONUT_CY + 16}" text-anchor="middle" class="pie-center-label" id="pieCenterSelectedLabel-${metric}"></text>
+    </g>
+  `;
+  return `<svg viewBox="0 0 ${DONUT_SIZE} ${DONUT_SIZE}" width="${renderSize}" height="${renderSize}" role="img" aria-label="Muskelgruppen-Verteilung" id="donutSvg-${metric}">${paths}${centerHTML}</svg>`;
+}
+// Ermittelt pro Übung die Sätze/das bewegte Gewicht innerhalb EINER Muskelgruppe — Grundlage
+// für die Unterabschnitte im Donut sowie die Übungs-Übersicht darunter, wenn eine Muskelgruppe
+// angetippt wird. Gleiche Zähl-/Ausschlusslogik wie computeMuscleGroupSetCounts()/
+// computeMuscleGroupVolumeSums(), nur nach Übungsname statt Muskelgruppe aufgeschlüsselt.
+function computeExerciseBreakdownForGroup(group, periodDays){
+  const cutoff = periodDays ? Date.now() - periodDays * 86400000 : null;
+  const map = {};
+  sessions.forEach(s => {
+    if (cutoff && new Date(s.date).getTime() < cutoff) return;
+    s.entries.forEach(e => {
+      const planEx = plan.exercises.find(x => x.id === e.exerciseId);
+      const g = (planEx && planEx.muscleGroup) || 'Sonstige';
+      if (g !== group) return;
+      const validCount = e.type === 'time'
+        ? (e.sets || []).filter(st => st.seconds !== null && st.seconds !== undefined).length
+        : (e.sets || []).filter(st => st.reps !== null && st.reps !== undefined).length;
+      const vol = (e.sets || []).reduce((a,st) => a + ((st.reps && st.weight) ? st.reps*effectiveSetWeight(planEx, st.weight) : 0), 0);
+      if (!map[e.name]) map[e.name] = { name: e.name, sets: 0, volume: 0 };
+      map[e.name].sets += validCount;
+      map[e.name].volume += vol;
+    });
+  });
+  return Object.values(map);
 }
 
 function sessionsPerMonth(){
@@ -4736,6 +4995,11 @@ function computeMuscleGroupSetCounts(periodDays){
 }
 
 let muscleBalancePeriod = 'all';
+// Aktuell aufgeklapptes Muskelgruppen-Segment im Donut ({ metric: 'sets'|'volume', group }) —
+// jeweils nur EIN Segment über beide Diagramme hinweg gleichzeitig offen, damit Zustand und
+// die gemeinsame Übungs-Übersicht darunter einfach bleiben. Wird beim Verlassen des Screens
+// über resetAllAccordions() zurückgesetzt.
+let muscleBalanceDrilldown = null;
 
 // Bewegtes Gewicht (kg) pro Muskelgruppe — dieselbe Ausschluss-Logik wie totalVolumeKg():
 // Sätze ohne reps/weight (Zeit-/Kardio-Übungen, noWeight-Übungen wie Situps ohne
@@ -4789,53 +5053,191 @@ function renderMuscleBalance(){
   const volumeSegments = volumeGroups.map(g => ({ label: g, value: sums[g], color: muscleGroupColor(g) }));
 
   // Eine gemeinsame Legende reicht (dieselben Muskelgruppen-Farben gelten für beide
-  // Diagramme) — Farb-Swatch bleibt weiterhin antippbar, die Werte daneben zeigen aber
-  // BEIDE Kennzahlen (Sätze und kg) nebeneinander, damit klar bleibt, was zu welchem
-  // Diagramm gehört.
+  // Diagramme) — der Swatch zeigt jetzt statt einer reinen Farbfläche den Prozentanteil an
+  // den GESAMTEN Sätzen (passend zum "Nach Sätzen"-Diagramm), in der jeweiligen
+  // Muskelgruppen-Farbe eingefärbt statt sie nur als Fläche zu zeigen — bleibt dabei weiterhin
+  // antippbar, um die Farbe zu ändern. Die Werte daneben zeigen weiterhin BEIDE Kennzahlen
+  // (Sätze und kg) nebeneinander, damit klar bleibt, was zu welchem Diagramm gehört.
   const weightCapableGroups = computeMuscleGroupsWithWeightField(periodDaysMap[muscleBalancePeriod]);
   const legendGroups = MUSCLE_GROUP_ORDER.filter(g => g !== 'Kardio' && (counts[g] || sums[g]));
-  const legendHTML = legendGroups.map(g => `
+  const legendHTML = legendGroups.map(g => {
+    const pct = totalSets ? Math.round((counts[g] || 0) / totalSets * 100) : 0;
+    const volPct = totalVolume ? Math.round((sums[g] || 0) / totalVolume * 100) : 0;
+    return `
     <div class="muscle-balance-legend-row">
-      <button class="muscle-balance-swatch" data-mg-color="${g}" style="background:${muscleGroupColor(g)};" aria-label="Farbe für ${g} ändern"></button>
+      <button class="muscle-balance-swatch" data-mg-color="${g}" style="color:${muscleGroupColor(g)};" aria-label="Farbe für ${g} ändern (aktuell ${pct}% der Sätze, ${volPct}% des Gewichts)">${pct}%</button>
       <span class="muscle-balance-legend-label">${g}</span>
-      <span class="muscle-balance-legend-value">${counts[g] || 0} Sätze${weightCapableGroups.has(g) ? ` · ${Math.round(sums[g] || 0).toLocaleString('de-DE')} kg` : ''}</span>
+      <div class="muscle-balance-legend-values">
+        <span class="muscle-balance-legend-value">${counts[g] || 0} Sätze</span>
+        ${weightCapableGroups.has(g) ? `<span class="muscle-balance-legend-value muscle-balance-legend-subpct">${Math.round(sums[g] || 0).toLocaleString('de-DE')} kg · ${volPct}%</span>` : ''}
+      </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 
   app.innerHTML = `
-    <div class="back-row" style="margin-top:0; margin-bottom:12px; display:flex; align-items:center; gap:10px;">
-      <button class="back-btn-icon" id="btnBack" aria-label="Zurück" style="margin:0; flex-shrink:0;"><img src="${ICON_BACK_ARROW}" alt=""></button>
-      <div class="period-row" style="margin:0; flex:1;">
-        <button class="period-btn ${muscleBalancePeriod === 'all' ? 'active' : ''}" data-mgperiod="all">Insgesamt</button>
-        <button class="period-btn ${muscleBalancePeriod === 'quarter' ? 'active' : ''}" data-mgperiod="quarter">90 Tage</button>
-        <button class="period-btn ${muscleBalancePeriod === 'month' ? 'active' : ''}" data-mgperiod="month">30 Tage</button>
-      </div>
+    <div class="back-row" style="margin-top:0;">
+      <button class="back-btn-icon" id="btnBack" aria-label="Zurück"><img src="${ICON_BACK_ARROW}" alt=""></button>
+    </div>
+    <div class="period-row" style="margin:14px 0 12px;">
+      <button class="period-btn ${muscleBalancePeriod === 'all' ? 'active' : ''}" data-mgperiod="all">Insgesamt</button>
+      <button class="period-btn ${muscleBalancePeriod === 'quarter' ? 'active' : ''}" data-mgperiod="quarter">90 Tage</button>
+      <button class="period-btn ${muscleBalancePeriod === 'month' ? 'active' : ''}" data-mgperiod="month">30 Tage</button>
     </div>
     <div class="muscle-balance-charts-row">
       <div class="muscle-balance-chart-col">
         <div class="section-label">Nach Sätzen</div>
-        <div class="muscle-balance-chart-wrap">${buildPieChart(setSegments, 130)}</div>
+        <div class="muscle-balance-chart-wrap">${buildInteractiveDonut(setSegments, 130, 'sets', totalSets.toLocaleString('de-DE'), 'Sätze')}</div>
         ${!totalSets ? '<div class="history-empty">Noch keine Daten.</div>' : ''}
       </div>
       <div class="muscle-balance-chart-col">
         <div class="section-label">Nach Gewicht (kg)</div>
-        <div class="muscle-balance-chart-wrap">${buildPieChart(volumeSegments, 130)}</div>
+        <div class="muscle-balance-chart-wrap">${buildInteractiveDonut(volumeSegments, 130, 'volume', Math.round(totalVolume).toLocaleString('de-DE'), 'kg')}</div>
         ${!totalVolume ? '<div class="history-empty">Noch keine Daten.</div>' : ''}
       </div>
     </div>
-    <div class="muscle-balance-legend" style="margin-top:14px;">${legendHTML}</div>
+    <div class="muscle-balance-breakdown" id="exerciseBreakdown" style="display:none;">
+      <div class="muscle-balance-breakdown-header">
+        <span class="muscle-balance-breakdown-title" id="breakdownTitle"></span>
+        <button class="muscle-balance-breakdown-close" id="breakdownClose" aria-label="Übungs-Übersicht schließen">✕</button>
+      </div>
+      <div class="muscle-balance-legend" id="breakdownList"></div>
+    </div>
+    <div class="muscle-balance-legend" id="mainLegend" style="margin-top:16px;">${legendHTML}</div>
   `;
+
+  // Wandelt einen Klick auf ein Donut-Segment (Muskelgruppe) oder einen bereits geöffneten
+  // Übungs-Unterabschnitt in den neuen Auswahlzustand um — Auswahl EINES Segments schließt
+  // automatisch ein evtl. vorher offenes anderes, erneutes Antippen (auch eines Unterabschnitts
+  // derselben Gruppe) klappt wieder zu.
+  function toggleMuscleDonutSelection(metric, group){
+    const isSame = muscleBalanceDrilldown && muscleBalanceDrilldown.metric === metric && muscleBalanceDrilldown.group === group;
+    muscleBalanceDrilldown = isSame ? null : { metric, group };
+    applyMuscleDonutSelection();
+  }
+
+  // Setzt beide Donuts + die Übungs-Übersicht anhand von muscleBalanceDrilldown neu — per
+  // direkter DOM-Manipulation statt komplettem innerHTML-Neuaufbau, damit die CSS-Transitions
+  // (Ein-/Ausgrauen, Center-Text-Wechsel, wachsende Unterabschnitte, Übersicht-Einblendung)
+  // tatsächlich animiert ablaufen, statt bei jedem Tap abrupt zu springen.
+  function applyMuscleDonutSelection(){
+    const anySelected = !!muscleBalanceDrilldown;
+    [['sets', setSegments, totalSets], ['volume', volumeSegments, totalVolume]].forEach(([metric, segments, metricTotal]) => {
+      const svg = document.getElementById('donutSvg-' + metric);
+      if (!svg) return;
+      const ranges = donutAngleRanges(segments);
+      const selected = (muscleBalanceDrilldown && muscleBalanceDrilldown.metric === metric) ? muscleBalanceDrilldown.group : null;
+      // Läuft die Auswahl im JEWEILS ANDEREN Diagramm, wird dieses hier komplett ausgegraut
+      // (Werte spielen dann keine Rolle mehr) statt nur die einzelnen Segmente zu dimmen.
+      const chartWrap = svg.closest('.muscle-balance-chart-wrap');
+      if (chartWrap) chartWrap.classList.toggle('donut-chart-dim', anySelected && !selected);
+
+      svg.querySelectorAll('.donut-subseg').forEach(el => el.remove());
+      ranges.forEach(r => {
+        const path = Array.from(svg.querySelectorAll('.donut-seg:not(.donut-subseg)')).find(p => p.dataset.group === r.label);
+        if (!path) return;
+        path.classList.toggle('donut-seg-hidden', selected === r.label);
+        path.classList.toggle('donut-seg-dim', !!selected && selected !== r.label);
+      });
+
+      const defaultCenter = document.getElementById('pieCenterDefault-' + metric);
+      const selectedCenter = document.getElementById('pieCenterSelected-' + metric);
+      if (defaultCenter) defaultCenter.classList.toggle('pie-center-hidden', !!selected);
+      if (selectedCenter) selectedCenter.classList.toggle('pie-center-hidden', !selected);
+
+      if (!selected) return;
+      const range = ranges.find(r => r.label === selected);
+      if (!range) return;
+
+      const periodDays = periodDaysMap[muscleBalancePeriod];
+      const breakdown = computeExerciseBreakdownForGroup(selected, periodDays)
+        .map(e => ({ name: e.name, value: metric === 'sets' ? e.sets : e.volume }))
+        .filter(e => e.value > 0)
+        .sort((a,b) => b.value - a.value);
+      const subTotal = breakdown.reduce((a,e) => a + e.value, 0);
+      let a = range.startAngle;
+      const gapDeg = breakdown.length > 1 ? 1.4 : 0;
+      breakdown.forEach((ex, i) => {
+        const fraction = subTotal ? ex.value / subTotal : 0;
+        const rawEnd = a + fraction * (range.endAngle - range.startAngle);
+        const startA = a + (i > 0 ? gapDeg/2 : 0);
+        const endA = rawEnd - (i < breakdown.length - 1 ? gapDeg/2 : 0);
+        a = rawEnd;
+        const subPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        subPath.setAttribute('d', donutArcPath(startA, endA));
+        subPath.setAttribute('fill', shadeMuscleColor(range.color, i));
+        subPath.setAttribute('class', 'donut-seg donut-subseg');
+        subPath.style.transitionDelay = (i * 35) + 'ms';
+        subPath.onclick = () => toggleMuscleDonutSelection(metric, selected);
+        svg.appendChild(subPath);
+      });
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        svg.querySelectorAll('.donut-subseg').forEach(el => el.classList.add('donut-subseg-in'));
+      }));
+
+      const selValueEl = document.getElementById('pieCenterSelectedValue-' + metric);
+      const selLabelEl = document.getElementById('pieCenterSelectedLabel-' + metric);
+      if (selValueEl && selLabelEl){
+        const pct = metricTotal ? Math.round(range.value / metricTotal * 100) : 0;
+        selValueEl.textContent = pct + '%';
+        selLabelEl.textContent = selected;
+      }
+    });
+
+    const mainLegend = document.getElementById('mainLegend');
+    if (mainLegend) mainLegend.classList.toggle('dimmed', anySelected);
+
+    const panel = document.getElementById('exerciseBreakdown');
+    if (!panel) return;
+    if (!muscleBalanceDrilldown){
+      panel.classList.remove('open');
+      setTimeout(() => { if (!muscleBalanceDrilldown) panel.style.display = 'none'; }, 260);
+      return;
+    }
+    const { metric, group } = muscleBalanceDrilldown;
+    const periodDays = periodDaysMap[muscleBalancePeriod];
+    const breakdown = computeExerciseBreakdownForGroup(group, periodDays)
+      .map(e => ({ name: e.name, value: metric === 'sets' ? e.sets : e.volume }))
+      .filter(e => e.value > 0)
+      .sort((a,b) => b.value - a.value);
+    const subTotal = breakdown.reduce((a,e) => a + e.value, 0);
+    const rows = breakdown.map((ex, i) => {
+      const pct = subTotal ? Math.round(ex.value / subTotal * 100) : 0;
+      const valueLabel = metric === 'sets' ? `${ex.value} Sätze` : `${Math.round(ex.value).toLocaleString('de-DE')} kg`;
+      return `
+        <div class="muscle-balance-legend-row">
+          <span class="muscle-balance-swatch-static" style="color:${shadeMuscleColor(muscleGroupColor(group), i)};">${pct}%</span>
+          <span class="muscle-balance-legend-label">${exerciseNameHTML(ex.name)}</span>
+          <span class="muscle-balance-legend-value">${valueLabel}</span>
+        </div>
+      `;
+    }).join('');
+    document.getElementById('breakdownTitle').textContent = `${group} – nach Übungen (${metric === 'sets' ? 'Sätze' : 'Gewicht'})`;
+    document.getElementById('breakdownList').innerHTML = rows || '<div class="history-empty">Keine Daten.</div>';
+    panel.style.display = 'block';
+    requestAnimationFrame(() => requestAnimationFrame(() => panel.classList.add('open')));
+  }
 
   document.getElementById('btnBack').onclick = () => history.back();
   app.querySelectorAll('[data-mgperiod]').forEach(btn => {
     btn.onclick = () => {
       muscleBalancePeriod = btn.dataset.mgperiod;
+      muscleBalanceDrilldown = null;
       renderMuscleBalance();
     };
   });
   app.querySelectorAll('[data-mg-color]').forEach(btn => {
     btn.onclick = () => openMuscleGroupColorPicker(btn.dataset.mgColor);
   });
+  app.querySelectorAll('.donut-seg[data-metric]').forEach(path => {
+    path.onclick = () => toggleMuscleDonutSelection(path.dataset.metric, path.dataset.group);
+  });
+  const breakdownCloseBtn = document.getElementById('breakdownClose');
+  if (breakdownCloseBtn) breakdownCloseBtn.onclick = () => { muscleBalanceDrilldown = null; applyMuscleDonutSelection(); };
+  // Stellt eine evtl. schon aktive Auswahl sofort wieder her (z. B. nach einem Neu-Rendern
+  // durch einen Farbwechsel während eine Muskelgruppe gerade aufgeklappt ist) — ohne diesen
+  // Aufruf bliebe der Donut nach so einem Neuaufbau wieder im unausgewählten Ausgangszustand.
+  applyMuscleDonutSelection();
 }
 
 function renderProgressList(){
@@ -4903,7 +5305,10 @@ function renderProgressList(){
       <span>Muskelgruppen-Verteilung</span><span class="progress-chevron">›</span>
     </button>
     ${rows || '<div class="history-empty">Noch keine Übung mit protokollierten Daten.</div>'}
-    <button class="btn btn-ghost" id="btnProgressExportPdf" style="margin-top:18px;">📄 Als PDF exportieren</button>
+    <button class="btn btn-ghost btn-icon-label" id="btnProgressExportPdf" style="margin-top:18px;">
+      <svg class="btn-icon-label-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"></path><path d="M5 13v-8a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2h-6.5"></path><path d="M3 19h9"></path><path d="M9 16l3 3l-3 3"></path></svg>
+      Als PDF exportieren
+    </button>
   `;
 
   document.getElementById('btnBack').onclick = () => history.back();
@@ -4973,15 +5378,15 @@ function renderExerciseProgress(name){
     const best = hist.length ? Math.max(...hist.map(h => h.maxWeight)) : 0;
     summaryLine = `Bestwert: ${best} kg`;
     chartsHTML = `
-      ${chartAccordionHTML(exerciseProgressChartOpen, 'maxWeight', 'Maximalgewicht je Einheit (kg)', weightPoints, cssVar('--accent'), v => v.toLocaleString('de-DE') + ' kg', buildLineChart(weightPoints, cssVar('--accent')))}
-      ${chartAccordionHTML(exerciseProgressChartOpen, 'cumulativeVolume', 'Insgesamt bewegtes Gewicht (kumulativ, kg)', cumulativeVolumePoints, cssVar('--accent'), v => v.toLocaleString('de-DE') + ' kg', buildLineChart(cumulativeVolumePoints, cssVar('--accent')))}
-      ${chartAccordionHTML(exerciseProgressChartOpen, 'volume', 'Trainingsvolumen je Einheit (kg, Wdh × Gewicht)', volumePoints, cssVar('--accent'), v => v.toLocaleString('de-DE') + ' kg', buildLineChart(volumePoints, cssVar('--accent')))}
-      ${chartAccordionHTML(exerciseProgressChartOpen, 'volumeMax', 'Volumen Max (bester Satz, kg)', volumeMaxPoints, cssVar('--accent'), v => v.toLocaleString('de-DE') + ' kg', buildLineChart(volumeMaxPoints, cssVar('--accent')))}
-      ${chartAccordionHTML(exerciseProgressChartOpen, 'volumeAvg', 'Volumen Ø (kg)', volumeAvgPoints, cssVar('--accent'), v => v.toLocaleString('de-DE') + ' kg', buildLineChart(volumeAvgPoints, cssVar('--accent')))}
-      ${chartAccordionHTML(exerciseProgressChartOpen, 'rm10Max', '10RM Max (geschätzt, kg)', rm10MaxPoints, cssVar('--accent'), v => v.toLocaleString('de-DE') + ' kg', buildLineChart(rm10MaxPoints, cssVar('--accent')))}
-      ${chartAccordionHTML(exerciseProgressChartOpen, 'rm10Avg', '10RM Ø (geschätzt, kg)', rm10AvgPoints, cssVar('--accent'), v => v.toLocaleString('de-DE') + ' kg', buildLineChart(rm10AvgPoints, cssVar('--accent')))}
-      ${chartAccordionHTML(exerciseProgressChartOpen, 'rm1Max', '1RM Max (geschätzt, kg)', rm1MaxPoints, cssVar('--accent'), v => v.toLocaleString('de-DE') + ' kg', buildLineChart(rm1MaxPoints, cssVar('--accent')))}
-      ${chartAccordionHTML(exerciseProgressChartOpen, 'rm1Avg', '1RM Ø (geschätzt, kg)', rm1AvgPoints, cssVar('--accent'), v => v.toLocaleString('de-DE') + ' kg', buildLineChart(rm1AvgPoints, cssVar('--accent')))}
+      ${chartAccordionHTML(exerciseProgressChartOpen, 'maxWeight', 'Maximalgewicht je Einheit', weightPoints, cssVar('--accent'), v => v.toLocaleString('de-DE') + ' kg', buildLineChart(weightPoints, cssVar('--accent')))}
+      ${chartAccordionHTML(exerciseProgressChartOpen, 'cumulativeVolume', 'Bewegtes Gewicht (kumulativ)', cumulativeVolumePoints, cssVar('--accent'), v => v.toLocaleString('de-DE') + ' kg', buildLineChart(cumulativeVolumePoints, cssVar('--accent')))}
+      ${chartAccordionHTML(exerciseProgressChartOpen, 'volume', 'Trainingsvolumen je Einheit (Wdh × Gewicht)', volumePoints, cssVar('--accent'), v => v.toLocaleString('de-DE') + ' kg', buildLineChart(volumePoints, cssVar('--accent')))}
+      ${chartAccordionHTML(exerciseProgressChartOpen, 'volumeMax', 'Volumen Max (bester Satz)', volumeMaxPoints, cssVar('--accent'), v => v.toLocaleString('de-DE') + ' kg', buildLineChart(volumeMaxPoints, cssVar('--accent')))}
+      ${chartAccordionHTML(exerciseProgressChartOpen, 'volumeAvg', 'Volumen Ø', volumeAvgPoints, cssVar('--accent'), v => v.toLocaleString('de-DE') + ' kg', buildLineChart(volumeAvgPoints, cssVar('--accent')))}
+      ${chartAccordionHTML(exerciseProgressChartOpen, 'rm10Max', '10RM Max (geschätzt)', rm10MaxPoints, cssVar('--accent'), v => v.toLocaleString('de-DE') + ' kg', buildLineChart(rm10MaxPoints, cssVar('--accent')))}
+      ${chartAccordionHTML(exerciseProgressChartOpen, 'rm10Avg', '10RM Ø (geschätzt)', rm10AvgPoints, cssVar('--accent'), v => v.toLocaleString('de-DE') + ' kg', buildLineChart(rm10AvgPoints, cssVar('--accent')))}
+      ${chartAccordionHTML(exerciseProgressChartOpen, 'rm1Max', '1RM Max (geschätzt)', rm1MaxPoints, cssVar('--accent'), v => v.toLocaleString('de-DE') + ' kg', buildLineChart(rm1MaxPoints, cssVar('--accent')))}
+      ${chartAccordionHTML(exerciseProgressChartOpen, 'rm1Avg', '1RM Ø (geschätzt)', rm1AvgPoints, cssVar('--accent'), v => v.toLocaleString('de-DE') + ' kg', buildLineChart(rm1AvgPoints, cssVar('--accent')))}
       ${chartAccordionHTML(exerciseProgressChartOpen, 'repsMax', 'Wdh Max je Einheit', repsMaxPoints, cssVar('--accent'), v => v.toLocaleString('de-DE'), buildLineChart(repsMaxPoints, cssVar('--accent')))}
       ${chartAccordionHTML(exerciseProgressChartOpen, 'repsAvg', 'Wdh Ø je Einheit', repsAvgPoints, cssVar('--accent'), v => v.toLocaleString('de-DE'), buildLineChart(repsAvgPoints, cssVar('--accent')))}
     `;
@@ -7103,14 +7508,20 @@ function openPlanRowEditPopup(i, onSaved){
 // statt des globalen App-Akzents. Die Live-Vorschau setzt in diesem Fall bewusst NICHT die
 // globale CSS-Variable --accent (das würde die ganze App umfärben) — die kleine
 // Vorschau-Kachel im Popup selbst reicht als Rückmeldung beim Ziehen/Eintippen.
-function openAccentColorPickerPrompt(tileMode, muscleGroup, onGlobalSave){
+function openAccentColorPickerPrompt(tileMode, muscleGroup, onGlobalSave, bgMode){
   const existing = document.getElementById('accentColorOverlay');
   if (existing) existing.remove();
 
   const isTile = !!tileMode;
   const isMuscleGroup = !!muscleGroup;
+  const isBg = !!bgMode;
+  // previousBg: null bedeutet "kein eigener Hintergrund gesetzt" (Theme-Standard) — muss von
+  // einer tatsächlich gewählten Farbe unterschieden werden, damit "Abbrechen" korrekt entweder
+  // die vorherige eigene Farbe ODER wieder den Theme-Standard herstellt statt fälschlich Gelb.
+  const previousBg = isBg ? currentBgColor() : null;
   const previousAccent = isMuscleGroup ? { hex: muscleGroupColor(muscleGroup) }
     : isTile ? (currentTileColor(tileMode) || ACCENT_COLORS[0])
+    : isBg ? (previousBg || { hex: cssVar('--bg') })
     : currentAccentColor();
   let { h, s, v } = hexToHsv(previousAccent.hex);
 
@@ -7171,9 +7582,12 @@ function openAccentColorPickerPrompt(tileMode, muscleGroup, onGlobalSave){
     preview.style.background = hex;
     if (!skipHexInput) hexInput.value = hex.toUpperCase();
     favBtn.classList.toggle('active', favoriteAccentColors().includes(hex));
-    // Live-Vorschau: --accent nur im Dokument gesetzt, noch nicht gespeichert (nur beim
-    // globalen Akzent — bei einer Kachel-Rahmenfarbe bleibt die App-Vorschau unverändert).
-    if (!isTile && !isMuscleGroup){
+    // Live-Vorschau: --accent/--bg nur im Dokument gesetzt, noch nicht gespeichert (nur beim
+    // globalen Akzent bzw. der Hintergrundfarbe — bei einer Kachel-Rahmenfarbe oder
+    // Muskelgruppen-Farbe bleibt die App-Vorschau unverändert).
+    if (isBg){
+      document.documentElement.style.setProperty('--bg', hex);
+    } else if (!isTile && !isMuscleGroup){
       document.documentElement.style.setProperty('--accent', hex);
       document.documentElement.style.setProperty('--accent-contrast', contrastTextColor(hex));
     }
@@ -7244,7 +7658,12 @@ function openAccentColorPickerPrompt(tileMode, muscleGroup, onGlobalSave){
   function cancel(){
     popOverlayStateIfOpen();
     removeOverlay();
-    if (!isTile && !isMuscleGroup){
+    if (isBg){
+      // war vorher kein eigener Hintergrund gesetzt, Override wieder entfernen statt eine
+      // Farbe zu erzwingen, sonst käme fälschlich der Startwert der Vorschau zum Tragen.
+      if (previousBg) document.documentElement.style.setProperty('--bg', previousBg.hex);
+      else document.documentElement.style.removeProperty('--bg');
+    } else if (!isTile && !isMuscleGroup){
       document.documentElement.style.setProperty('--accent', previousAccent.hex); // Vorschau zurücksetzen
       document.documentElement.style.setProperty('--accent-contrast', contrastTextColor(previousAccent.hex));
     }
@@ -7282,6 +7701,17 @@ function openAccentColorPickerPrompt(tileMode, muscleGroup, onGlobalSave){
       openModeSettingsPrompt(tileMode);
       return;
     }
+    if (isBg){
+      plan.bgColorId = 'custom';
+      plan.bgCustomHex = hsvToHex(h, s, v);
+      await saveJSON('plan', plan);
+      applyTheme();
+      popOverlayStateIfOpen();
+      removeOverlay();
+      bgPickerOpen = true;
+      renderSettings();
+      return;
+    }
     plan.accentColorId = 'custom';
     plan.accentCustomHex = hsvToHex(h, s, v);
     await saveJSON('plan', plan);
@@ -7311,7 +7741,7 @@ function openAccentColorPickerPrompt(tileMode, muscleGroup, onGlobalSave){
 function wireAccentSwatchInteractions(){
   const LONG_PRESS_MS = 450;
   const MOVE_CANCEL_PX = 10;
-  app.querySelectorAll('.accent-swatch').forEach(btn => {
+  app.querySelectorAll('.accent-swatch[data-accent-id]').forEach(btn => {
     let pressTimer = null;
     let startX = 0, startY = 0, longPressFired = false;
     const cancel = () => { clearTimeout(pressTimer); pressTimer = null; };
@@ -7344,6 +7774,56 @@ function wireAccentSwatchInteractions(){
         await saveJSON('plan', plan);
         applyTheme();
         accentPickerOpen = true;
+        renderSettings();
+      }, LONG_PRESS_MS);
+    }, { passive: true });
+    btn.addEventListener('touchmove', (ev) => {
+      const t = ev.touches[0];
+      if (Math.abs(t.clientX - startX) > MOVE_CANCEL_PX || Math.abs(t.clientY - startY) > MOVE_CANCEL_PX) cancel();
+    }, { passive: true });
+    btn.addEventListener('touchend', cancel);
+    btn.addEventListener('touchcancel', cancel);
+  });
+}
+
+// Verkabelt die Swatches im Hintergrundfarben-Grid — gleiches Muster wie
+// wireAccentSwatchInteractions(), nur auf plan.bgColorId statt plan.accentColorId und mit
+// zusätzlichem "Standard"-Swatch (data-bg-id="default", ohne data-bg-hex), der den eigenen
+// Hintergrund wieder entfernt und zum normalen Hell-/Dunkelmodus-Standard zurückkehrt.
+function wireBgSwatchInteractions(){
+  const LONG_PRESS_MS = 450;
+  const MOVE_CANCEL_PX = 10;
+  app.querySelectorAll('.accent-swatch[data-bg-id]').forEach(btn => {
+    let pressTimer = null;
+    let startX = 0, startY = 0, longPressFired = false;
+    const cancel = () => { clearTimeout(pressTimer); pressTimer = null; };
+    const isFavorite = btn.dataset.favorite === '1';
+
+    btn.onclick = async () => {
+      if (longPressFired){ longPressFired = false; return; }
+      plan.bgColorId = btn.dataset.bgId;
+      await saveJSON('plan', plan);
+      applyTheme();
+      bgPickerOpen = true; // Menü bleibt nach der Auswahl offen, statt sich zu schließen
+      renderSettings();
+    };
+
+    if (!isFavorite) return; // nur Favoriten sind entfernbar per Long-Press
+
+    btn.addEventListener('contextmenu', (ev) => ev.preventDefault());
+    btn.addEventListener('touchstart', (ev) => {
+      longPressFired = false;
+      const t = ev.touches[0];
+      startX = t.clientX; startY = t.clientY;
+      pressTimer = setTimeout(async () => {
+        longPressFired = true;
+        if (navigator.vibrate) navigator.vibrate(15);
+        if (!confirm('Diesen Favoriten entfernen?')) { longPressFired = false; return; }
+        plan.favoriteAccentColors = favoriteAccentColors().filter(h => h !== btn.dataset.bgHex);
+        if (plan.bgColorId === btn.dataset.bgId) plan.bgColorId = 'default';
+        await saveJSON('plan', plan);
+        applyTheme();
+        bgPickerOpen = true;
         renderSettings();
       }, LONG_PRESS_MS);
     }, { passive: true });
@@ -7414,6 +7894,27 @@ function renderSettings(){
           <span style="font-size:11px; color:var(--muted);">Gedrückt halten, um einen Favoriten wieder zu entfernen.</span>
         </div>
         <button class="accent-custom-btn" id="accentCustomBtn" type="button" style="display:${accentPickerOpen ? 'flex' : 'none'};">
+          <img class="accent-custom-btn-icon" src="${ICON_COLORWHEEL}" alt="">
+          Eigene Farbe wählen
+        </button>
+        <label style="display:block; font-size:12px; color:var(--muted); margin:18px 0 10px;">Hintergrundfarbe</label>
+        <button class="muscle-group-header" id="bgPickerToggle" type="button" style="margin-bottom:${bgPickerOpen ? '12px' : '0'};">
+          <span class="mg-name" style="display:flex; align-items:center; gap:10px; font-family:inherit; font-size:14px; letter-spacing:normal;">
+            <span style="width:20px; height:20px; border-radius:7px; background:${currentBgColor() ? currentBgColor().hex : 'var(--bg)'}; border:1px solid var(--border); display:inline-block; flex-shrink:0;"></span>
+            ${currentBgColor() ? currentBgColor().name : 'Standard'}
+          </span>
+          <span class="mg-meta"><span class="mg-arrow">${bgPickerOpen ? '▾' : '▸'}</span></span>
+        </button>
+        <div class="accent-swatch-grid" style="display:${bgPickerOpen ? 'grid' : 'none'};">
+          <button class="accent-swatch ${!currentBgColor() ? 'selected' : ''}" data-bg-id="default" style="background:var(--surface-2); border:1px dashed var(--border); display:flex; align-items:center; justify-content:center; font-size:15px; color:var(--muted);" aria-label="Standard">✕</button>
+          ${allAccentSwatches().map(c => `
+            <button class="accent-swatch ${currentBgColor() && currentBgColor().id === c.id ? 'selected' : ''}" data-bg-id="${c.id}" data-bg-hex="${c.hex}" data-favorite="${c.isFavorite ? '1' : ''}" style="background:${c.hex};" aria-label="${c.name}"></button>
+          `).join('')}
+        </div>
+        <div class="history-empty" id="bgFavHint" style="display:${bgPickerOpen && favoriteAccentColors().length ? 'block' : 'none'}; margin-top:8px; padding:8px 4px; text-align:left; background:none; border:none;">
+          <span style="font-size:11px; color:var(--muted);">Gedrückt halten, um einen Favoriten wieder zu entfernen.</span>
+        </div>
+        <button class="accent-custom-btn" id="bgCustomBtn" type="button" style="display:${bgPickerOpen ? 'flex' : 'none'};">
           <img class="accent-custom-btn-icon" src="${ICON_COLORWHEEL}" alt="">
           Eigene Farbe wählen
         </button>
@@ -7531,6 +8032,15 @@ function renderSettings(){
   wireAccentSwatchInteractions();
   const accentCustomBtn = document.getElementById('accentCustomBtn');
   if (accentCustomBtn) accentCustomBtn.onclick = (ev) => { ev.stopPropagation(); openAccentColorPickerPrompt(); };
+  const bgPickerToggleEl = document.getElementById('bgPickerToggle');
+  if (bgPickerToggleEl) bgPickerToggleEl.onclick = (ev) => {
+    ev.stopPropagation();
+    bgPickerOpen = !bgPickerOpen;
+    renderSettings();
+  };
+  wireBgSwatchInteractions();
+  const bgCustomBtn = document.getElementById('bgCustomBtn');
+  if (bgCustomBtn) bgCustomBtn.onclick = (ev) => { ev.stopPropagation(); openAccentColorPickerPrompt(null, null, null, true); };
   const accentContrastSlider = document.getElementById('accentContrastSlider');
   if (accentContrastSlider){
     accentContrastSlider.oninput = () => {
@@ -9019,8 +9529,9 @@ function renderActive(){
 
   const needsBodyWeightWarning = !!(currentPlanEx && (currentPlanEx.assisted || currentPlanEx.bodyweightExercise) && !plan.bodyWeight);
   const bodyWeightWarningHTML = needsBodyWeightWarning ? `
-    <div class="reference-block" style="border-color:var(--accent-2); margin-bottom:12px;">
-      ⚠️ Kein Körpergewicht hinterlegt — VOL zeigt aktuell nur das eingestellte Gerätegewicht statt des tatsächlich bewegten Gewichts. Trag dein Körpergewicht im Übungen-Tab ein, damit es korrekt berechnet wird.
+    <div class="reference-block" style="border-color:var(--accent-2); margin-bottom:12px; display:flex; align-items:flex-start; gap:8px;">
+      <img class="bodyweight-warning-icon" src="${ICON_WARNING}" alt="">
+      <span>Kein Körpergewicht hinterlegt — VOL zeigt aktuell nur das eingestellte Gerätegewicht statt des tatsächlich bewegten Gewichts. Trag dein Körpergewicht im Übungen-Tab ein, damit es korrekt berechnet wird.</span>
     </div>
   ` : '';
 
@@ -9879,7 +10390,7 @@ function renderSessionSummary(session){
       </div>
       <div class="summary-pill-divider"></div>
       <div class="summary-pill-item">
-        <div class="summary-pill-top"><span class="summary-pill-icon">🔥</span><span class="summary-pill-value">${streak === 1 ? 'W1' : streak + 'W'}</span></div>
+        <div class="summary-pill-top"><img class="summary-pill-icon-img" src="${ICON_FLAME}" alt=""><span class="summary-pill-value">${streak === 1 ? 'W1' : streak + 'W'}</span></div>
         <div class="summary-pill-label">am Stück</div>
       </div>
       <div class="summary-pill-divider"></div>
@@ -9895,7 +10406,7 @@ function renderSessionSummary(session){
     </div>
     <div class="section-label">Erfolge</div>
     <div class="summary-list">
-      ${rowsHTML || '<div class="history-empty">Keine neuen Bestleistungen diesmal — dranbleiben, beim nächsten Mal klappt’s! 💪</div>'}
+      ${rowsHTML || '<div class="history-empty">Keine neuen Bestleistungen diesmal — dranbleiben, beim nächsten Mal klappt’s! <img class="history-empty-icon" src="' + ICON_BICEPS + '" alt=""></div>'}
     </div>
     <div class="summary-actions no-print">
       <button class="btn btn-ghost" id="btnSummaryShare">Teilen</button>
@@ -9946,31 +10457,91 @@ function hexToRgbArr(hex){
   return [parseInt(clean.slice(0,2), 16) || 0, parseInt(clean.slice(2,4), 16) || 0, parseInt(clean.slice(4,6), 16) || 0];
 }
 
-// Zeichnet ein Kuchendiagramm direkt mit jsPDF-Bordmitteln (kein Canvas/SVG verfügbar) —
-// jedes Segment wird aus vielen schmalen Dreiecken (Mittelpunkt + zwei benachbarte
-// Kreisbogen-Punkte) zusammengesetzt, ~6° pro Dreieck ergibt eine optisch glatte Rundung.
-function pdfDrawPieChart(doc, cx, cy, radius, segments){
-  const total = segments.reduce((a,s) => a + s.value, 0);
+// Zeichnet einen Rahmen (abgerundetes Rechteck, kein Fill) um einen PDF-Abschnitt — entspricht
+// der Karten-Optik (Hintergrund/Rahmen), die jedes Diagramm in der App umgibt; vorher hatten
+// die PDF-Diagramme gar keinen Rahmen und wirkten freischwebend.
+function pdfCardBox(doc, x, y, w, h){
+  doc.setDrawColor(222); doc.setLineWidth(0.35);
+  doc.roundedRect(x, y, w, h, 2.5, 2.5, 'S');
+}
+// Zeichnet einen Donut-Ring direkt mit jsPDF-Bordmitteln (kein Canvas/SVG verfügbar) — JEDES
+// Segment als EIN einziges gefülltes Polygon (Außenbogen vor, Innenbogen zurück) statt vieler
+// einzelner Dreiecke wie zuvor: die alte Dreiecks-Variante erzeugte in der PDF-Darstellung
+// sichtbare helle Nahtlinien zwischen den Dreiecken (Sonnenrad-Optik) — ein durchgehendes
+// Polygon pro Segment hat keine internen Kanten mehr. Kleine Lücke zwischen den Segmenten und
+// zentrale Beschriftung (Gesamtzahl + Label) analog zum Donut in der App.
+function pdfDrawDonutChart(doc, cx, cy, outerR, innerR, segments, centerValue, centerLabel){
+  const visible = segments.filter(s => s.value > 0);
+  const total = visible.reduce((a,s) => a + s.value, 0);
   if (!total) return;
   let angle = -90;
-  segments.forEach(seg => {
-    if (!(seg.value > 0)) return;
+  const gapDeg = visible.length > 1 ? 2.5 : 0;
+  visible.forEach(seg => {
     const sweep = (seg.value / total) * 360;
-    const steps = Math.max(1, Math.ceil(sweep / 6));
-    const stepAngle = sweep / steps;
+    const startA = angle + gapDeg/2;
+    const endA = angle + sweep - gapDeg/2;
+    angle += sweep;
+    if (endA <= startA) return;
+    const steps = Math.max(2, Math.ceil((endA - startA) / 4));
+    const pts = [];
+    for (let i = 0; i <= steps; i++){
+      const a = (startA + (endA - startA) * i / steps) * Math.PI / 180;
+      pts.push([cx + outerR * Math.cos(a), cy + outerR * Math.sin(a)]);
+    }
+    for (let i = steps; i >= 0; i--){
+      const a = (startA + (endA - startA) * i / steps) * Math.PI / 180;
+      pts.push([cx + innerR * Math.cos(a), cy + innerR * Math.sin(a)]);
+    }
+    const deltas = [];
+    for (let i = 1; i < pts.length; i++) deltas.push([pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]]);
     const [r,g,b] = hexToRgbArr(seg.color);
     doc.setFillColor(r, g, b);
-    for (let i = 0; i < steps; i++){
-      const a1 = (angle + i * stepAngle) * Math.PI / 180;
-      const a2 = (angle + (i+1) * stepAngle) * Math.PI / 180;
-      const x1 = cx + radius * Math.cos(a1), y1 = cy + radius * Math.sin(a1);
-      const x2 = cx + radius * Math.cos(a2), y2 = cy + radius * Math.sin(a2);
-      doc.triangle(cx, cy, x1, y1, x2, y2, 'F');
-    }
-    angle += sweep;
+    doc.lines(deltas, pts[0][0], pts[0][1], [1,1], 'F', true);
   });
+  if (centerValue != null){
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(30);
+    doc.text(pdfSafeText(String(centerValue)), cx, cy - 0.5, { align: 'center' });
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(140);
+    doc.text(pdfSafeText(String(centerLabel || '')), cx, cy + 3.5, { align: 'center' });
+  }
 }
-
+// Größeres Verlaufsdiagramm mit Grundlinie, zwei dezenten Gitterlinien, Punkten sowie
+// Datums-Beschriftung an den Rändern und dem hervorgehobenen letzten Wert oben rechts —
+// die PDF-Entsprechung der Hauptdiagramme (Bewegtes Gewicht/Trainingszeit) in der App, die im
+// Export bisher komplett fehlten (nur die kleinen Muskelgruppen-Sparklines waren enthalten).
+function pdfDrawLineChart(doc, x, y, w, h, points, colorHex, valueFormatter){
+  const fmt = valueFormatter || (v => v);
+  const [r,g,b] = hexToRgbArr(colorHex);
+  if (!points.length || points.length < 2){
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(150);
+    doc.text(pdfSafeText(points.length ? 'Noch zu wenig Daten für einen Verlauf.' : 'Keine Daten für diesen Zeitraum.'), x, y + h/2);
+    return;
+  }
+  const padB = 5;
+  const chartH = h - padB;
+  const values = points.map(p => p.value);
+  const maxV = Math.max(...values, 0);
+  const minV = Math.min(0, ...values);
+  const range = (maxV - minV) || 1;
+  doc.setDrawColor(235); doc.setLineWidth(0.2);
+  [0.33, 0.66].forEach(f => doc.line(x, y + chartH*f, x + w, y + chartH*f));
+  doc.setDrawColor(205);
+  doc.line(x, y + chartH, x + w, y + chartH);
+  const coords = points.map((p,i) => ({
+    x: x + (points.length > 1 ? (i/(points.length-1))*w : 0),
+    y: y + chartH - ((p.value - minV)/range)*chartH,
+    ...p
+  }));
+  doc.setDrawColor(r, g, b); doc.setLineWidth(0.7);
+  for (let i = 1; i < coords.length; i++) doc.line(coords[i-1].x, coords[i-1].y, coords[i].x, coords[i].y);
+  doc.setFillColor(r, g, b);
+  coords.forEach(c => doc.circle(c.x, c.y, 0.8, 'F'));
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(140);
+  doc.text(pdfSafeText(coords[0].label), x, y + h);
+  doc.text(pdfSafeText(coords[coords.length-1].label), x + w, y + h, { align: 'right' });
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(r, g, b);
+  doc.text(pdfSafeText(fmt(values[values.length-1])), x + w, y - 2, { align: 'right' });
+}
 // Kleine, achsenlose Verlaufslinie (Sparkline) in einer bestimmten Farbe innerhalb eines
 // festen Rechtecks (x,y,w,h) — für die kompakten Pro-Muskelgruppe-Mini-Charts im PDF.
 function pdfDrawSparkline(doc, x, y, w, h, points, colorHex){
@@ -10128,31 +10699,63 @@ function buildProgressPdfBlob(){
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const marginX = 14;
   const pageW = 210, pageH = 297;
+  const contentW = pageW - marginX*2;
   let y = 16;
 
   const periodDaysMap = { total: null, week: 7, month: 30, year: 365 };
   const periodDays = periodDaysMap[statsPeriod] ?? null;
   const periodLabel = PERIOD_LABELS[statsPeriod] || 'Insgesamt';
 
+  // Springt auf eine neue Seite, wenn der nächste Abschnitt (Höhe h) nicht mehr auf die
+  // aktuelle Seite passt — verhindert, dass Kartenrahmen mitten über einen Seitenumbruch laufen.
+  function ensureSpace(h){
+    if (y + h > pageH - 14){ doc.addPage(); y = 16; }
+  }
+
   doc.setFont('helvetica', 'bold'); doc.setFontSize(18); doc.setTextColor(20);
-  doc.text(pdfSafeText('Trainingsplan — Fortschritt'), marginX, y);
+  doc.text(pdfSafeText('Trainingsplan — Statistiken'), marginX, y);
   y += 6;
   doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(100);
   doc.text(pdfSafeText(`Zeitraum: ${periodLabel} · erstellt am ${new Date().toLocaleDateString('de-DE')}`), marginX, y);
-  y += 4;
+  y += 5;
   doc.setDrawColor(210);
   doc.line(marginX, y, pageW - marginX, y);
-  y += 9;
+  y += 8;
 
-  // Übersicht (Allzeit-Gesamtwerte, wie auf der Fortschritt-Startseite)
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(20);
-  doc.text(pdfSafeText('Übersicht (gesamt)'), marginX, y);
-  y += 6;
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(70);
-  doc.text(pdfSafeText(`${sessions.length} Einheiten protokolliert`), marginX, y); y += 5;
-  doc.text(pdfSafeText(`Trainingszeit gesamt: ${fmtDuration(totalTrainingSeconds())}`), marginX, y); y += 5;
-  doc.text(pdfSafeText(`Bewegtes Gewicht gesamt: ${totalVolumeKg().toLocaleString('de-DE')} kg`), marginX, y); y += 10;
+  // ---------- Übersicht ----------
+  {
+    const boxH = 32;
+    ensureSpace(boxH);
+    pdfCardBox(doc, marginX, y, contentW, boxH);
+    let ty = y + 7;
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(20);
+    doc.text(pdfSafeText('Übersicht (gesamt)'), marginX + 5, ty);
+    ty += 6;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(70);
+    doc.text(pdfSafeText(`${sessions.length} ${sessions.length === 1 ? 'Einheit' : 'Einheiten'} protokolliert`), marginX + 5, ty); ty += 5.2;
+    doc.text(pdfSafeText(`Trainingszeit gesamt: ${fmtDuration(totalTrainingSeconds())}`), marginX + 5, ty); ty += 5.2;
+    doc.text(pdfSafeText(`Bewegtes Gewicht gesamt: ${totalVolumeKg().toLocaleString('de-DE')} kg`), marginX + 5, ty);
+    y += boxH + 8;
+  }
 
+  // ---------- Hauptdiagramme (Bewegtes Gewicht & Trainingszeit) — bisher im Export komplett
+  // gefehlt, obwohl es genau die beiden Diagramme oben auf dem Statistik-Screen sind. ----------
+  function drawLineChartSection(title, points, colorHex, formatter){
+    const boxH = 46;
+    ensureSpace(boxH);
+    pdfCardBox(doc, marginX, y, contentW, boxH);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(20);
+    doc.text(pdfSafeText(`${title} — ${periodLabel}`), marginX + 5, y + 7);
+    pdfDrawLineChart(doc, marginX + 5, y + 12, contentW - 10, boxH - 20, points, colorHex, formatter);
+    y += boxH + 8;
+  }
+
+  const volumePoints = aggregateSessions(s => sessionVolumeKg(s), statsPeriod).map(p => ({ label: p.label, value: p.value }));
+  const timePoints = aggregateSessions(s => s.durationSec, statsPeriod).map(p => ({ label: p.label, value: p.value }));
+  drawLineChartSection('Bewegtes Gewicht', volumePoints, cssVar('--accent-3') || '#6f9bd1', v => v.toLocaleString('de-DE') + ' kg');
+  drawLineChartSection('Trainingszeit', timePoints, cssVar('--accent') || '#d9c74a', fmtDuration);
+
+  // ---------- Muskelgruppen-Verteilung: zwei Donuts (statt der alten nahtlosen Kuchen-Optik) ----------
   const counts = computeMuscleGroupSetCounts(periodDays);
   const setGroups = MUSCLE_GROUP_ORDER.filter(g => g !== 'Kardio' && counts[g]);
   const setTotal = setGroups.reduce((a,g) => a + counts[g], 0);
@@ -10160,38 +10763,41 @@ function buildProgressPdfBlob(){
   const volGroups = MUSCLE_GROUP_ORDER.filter(g => g !== 'Kardio' && sums[g]);
   const volTotal = volGroups.reduce((a,g) => a + sums[g], 0);
 
-  function drawPieSection(title, groups, valuesMap, totalVal, unit){
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(20);
-    doc.text(pdfSafeText(`${title} — ${periodLabel}`), marginX, y);
-    const chartCy = y + 22;
-    const cx = marginX + 20, radius = 17;
+  function drawDonutSection(title, groups, valuesMap, totalVal, unit, centerValue, centerLabel){
+    const legendLineH = 5.2;
+    const boxH = Math.max(46, 14 + groups.length * legendLineH + 6);
+    ensureSpace(boxH);
+    pdfCardBox(doc, marginX, y, contentW, boxH);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(20);
+    doc.text(pdfSafeText(`${title} — ${periodLabel}`), marginX + 5, y + 7);
+    const chartCy = y + 8 + 16;
+    const cx = marginX + 5 + 16, outerR = 15, innerR = 9;
     if (totalVal > 0){
-      pdfDrawPieChart(doc, cx, chartCy, radius, groups.map(g => ({ value: valuesMap[g], color: muscleGroupColor(g) })));
+      pdfDrawDonutChart(doc, cx, chartCy, outerR, innerR, groups.map(g => ({ value: valuesMap[g], color: muscleGroupColor(g) })), centerValue, centerLabel);
     } else {
       doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(150);
-      doc.text(pdfSafeText('Keine Daten für diesen Zeitraum.'), marginX, chartCy);
+      doc.text(pdfSafeText('Keine Daten für diesen Zeitraum.'), marginX + 5, chartCy);
     }
-    let ly = y + 8;
-    const legendX = marginX + 46;
+    let ly = y + 11;
+    const legendX = marginX + 43;
     groups.forEach(g => {
       const [r,gg,b] = hexToRgbArr(muscleGroupColor(g));
       doc.setFillColor(r, gg, b);
-      doc.rect(legendX, ly - 3, 3.4, 3.4, 'F');
+      doc.roundedRect(legendX, ly - 3, 3.4, 3.4, 0.6, 0.6, 'F');
       doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(60);
       const pct = totalVal ? Math.round(valuesMap[g] / totalVal * 100) : 0;
       const valText = unit === 'kg' ? `${Math.round(valuesMap[g]).toLocaleString('de-DE')} kg` : `${valuesMap[g]} Sätze`;
       doc.text(pdfSafeText(`${g} — ${valText} (${pct}%)`), legendX + 5, ly);
-      ly += 5.2;
+      ly += legendLineH;
     });
-    y = Math.max(chartCy + radius + 8, ly + 4);
+    y += boxH + 8;
   }
 
-  drawPieSection('Nach Sätzen', setGroups, counts, setTotal, 'sets');
-  drawPieSection('Nach bewegtem Gewicht (kg)', volGroups, sums, volTotal, 'kg');
+  drawDonutSection('Nach Sätzen', setGroups, counts, setTotal, 'sets', setTotal.toLocaleString('de-DE'), 'Sätze');
+  drawDonutSection('Nach bewegtem Gewicht (kg)', volGroups, sums, volTotal, 'kg', Math.round(volTotal).toLocaleString('de-DE'), 'kg');
 
-  // Mini-Verlaufslinien pro Muskelgruppe (bewegtes Gewicht über Zeit, 2 pro Zeile) —
-  // dieselbe Berechnung wie sessionVolumeKgForGroup() in renderStatsChart(), hier lokal
-  // dupliziert, damit dieser Export keine DOM-/Render-Funktionen voraussetzt.
+  // ---------- Bewegtes Gewicht je Muskelgruppe (Mini-Charts, jetzt jeweils in einer eigenen
+  // Karte statt frei auf der Seite schwebend) ----------
   function sessionVolumeKgForGroupPdf(s, group){
     return s.entries.reduce((a,e) => {
       const planEx = plan.exercises.find(x => x.id === e.exerciseId);
@@ -10204,26 +10810,28 @@ function buildProgressPdfBlob(){
     return pts.reduce((a,p) => a + p.value, 0) > 0;
   });
   if (sparkGroups.length){
-    if (y > pageH - 50){ doc.addPage(); y = 16; }
+    ensureSpace(14);
     doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(20);
     doc.text(pdfSafeText(`Bewegtes Gewicht je Muskelgruppe — ${periodLabel}`), marginX, y);
-    y += 8;
+    y += 7;
     const colGap = 6;
-    const colW = (pageW - marginX*2 - colGap) / 2;
+    const colW = (contentW - colGap) / 2;
+    const cardH = 24;
     let col = 0, rowY = y;
     sparkGroups.forEach(g => {
       if (col === 0){
-        if (rowY > pageH - 30){ doc.addPage(); rowY = 16; }
+        if (rowY + cardH > pageH - 14){ doc.addPage(); rowY = 16; }
         y = rowY;
       }
       const gPoints = aggregateSessions(s => sessionVolumeKgForGroupPdf(s, g), statsPeriod).map(p => ({ label: p.label, value: p.value }));
       const gTotal = gPoints.reduce((a,p) => a + p.value, 0);
       const x = marginX + col * (colW + colGap);
+      pdfCardBox(doc, x, rowY, colW, cardH);
       doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(20);
-      doc.text(pdfSafeText(`${g} — ${Math.round(gTotal).toLocaleString('de-DE')} kg`), x, rowY);
-      pdfDrawSparkline(doc, x, rowY + 3, colW, 13, gPoints, muscleGroupColor(g));
+      doc.text(pdfSafeText(`${g} — ${Math.round(gTotal).toLocaleString('de-DE')} kg`), x + 4, rowY + 6);
+      pdfDrawSparkline(doc, x + 4, rowY + 9, colW - 8, 11, gPoints, muscleGroupColor(g));
       col = col === 0 ? 1 : 0;
-      if (col === 0) rowY += 22;
+      if (col === 0) rowY += cardH + 4;
     });
   }
 
@@ -10369,29 +10977,52 @@ function renderSessionDetail(id){
         <span>${s.entries.length} Übungen · ${totalSets} Sätze</span>
       </div>
     </div>
-    <div class="section-label">Erfolge</div>
-    <div class="summary-list">
-      ${highlightsHTML || '<div class="history-empty">Keine neuen Bestleistungen in dieser Einheit 💪</div>'}
+    <div class="muscle-group" style="margin-bottom:14px;">
+      <button class="muscle-group-header" id="btnToggleErfolge" type="button" aria-expanded="true">
+        <span class="mg-name">Erfolge</span>
+        <span class="mg-meta"><span class="mg-arrow" id="erfolgeArrow">▾</span></span>
+      </button>
+      <div class="muscle-group-body" id="erfolgeBody" style="display:block;">
+        <div class="summary-list">
+          ${highlightsHTML || '<div class="history-empty">Keine neuen Bestleistungen in dieser Einheit <img class="history-empty-icon" src="' + ICON_BICEPS + '" alt=""></div>'}
+        </div>
+      </div>
     </div>
-    <button class="detail-full-toggle no-print" id="btnToggleFull" aria-expanded="false">
-      Gesamtes Training anzeigen <span class="detail-full-toggle-chevron" id="fullToggleChevron">▾</span>
-    </button>
-    <div class="detail-full-table-wrap" id="fullTableWrap">
-      <table class="detail-table">
-        <thead><tr><th>Übung</th><th>Satz</th><th>Wdh / Zeit</th><th>Gewicht</th>${sessionHasCardio ? '<th>Kardio</th>' : ''}</tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
+    <div class="muscle-group" style="margin-top:10px;">
+      <button class="muscle-group-header no-print" id="btnToggleFull" type="button" aria-expanded="false">
+        <span class="mg-name">Gesamtes Training anzeigen</span>
+        <span class="mg-meta"><span class="mg-arrow" id="fullToggleChevron">▸</span></span>
+      </button>
+      <div class="muscle-group-body" id="fullTableWrap" style="display:none; padding:2px 16px 14px;">
+        <table class="detail-table">
+          <thead><tr><th>Übung</th><th>Satz</th><th>Wdh / Zeit</th><th>Gewicht</th>${sessionHasCardio ? '<th>Kardio</th>' : ''}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
     </div>
     <div class="detail-actions no-print">
       <button class="btn btn-ghost" id="btnDelete">Löschen</button>
       <button class="btn btn-ghost" id="btnShare">Teilen</button>
-      <button class="btn btn-primary" id="btnPdf">Speichern</button>
+      <button class="btn btn-ghost" id="btnPdf">Speichern</button>
     </div>
     <div class="detail-actions no-print" style="margin-top:10px;">
       <button class="btn btn-ghost" id="btnExportSession">Training exportieren</button>
     </div>
-    <button class="btn btn-primary no-print" id="btnRepeat" style="margin-top:10px;">🔁 Nochmal trainieren</button>
+    <button class="btn btn-primary btn-repeat no-print" id="btnRepeat" style="margin-top:10px;">
+      <svg class="btn-repeat-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+      Nochmal trainieren
+    </button>
   `;
+
+  document.getElementById('btnToggleErfolge').onclick = () => {
+    const body = document.getElementById('erfolgeBody');
+    const arrow = document.getElementById('erfolgeArrow');
+    const btn = document.getElementById('btnToggleErfolge');
+    const isOpen = body.style.display !== 'none';
+    body.style.display = isOpen ? 'none' : 'block';
+    arrow.textContent = isOpen ? '▸' : '▾';
+    btn.setAttribute('aria-expanded', String(!isOpen));
+  };
 
   app.querySelectorAll('.summary-row[data-exerciseid]').forEach(row => {
     row.onclick = () => goExerciseSessionDetail(s.id, row.dataset.exerciseid);
@@ -10404,9 +11035,10 @@ function renderSessionDetail(id){
     const wrap = document.getElementById('fullTableWrap');
     const chevron = document.getElementById('fullToggleChevron');
     const btn = document.getElementById('btnToggleFull');
-    const isOpen = wrap.classList.toggle('open');
-    chevron.classList.toggle('open', isOpen);
-    btn.setAttribute('aria-expanded', String(isOpen));
+    const isOpen = wrap.style.display !== 'none';
+    wrap.style.display = isOpen ? 'none' : 'block';
+    chevron.textContent = isOpen ? '▸' : '▾';
+    btn.setAttribute('aria-expanded', String(!isOpen));
   };
   document.getElementById('btnPdf').onclick = () => {
     const dateStub = (s.date || '').slice(0,10);
