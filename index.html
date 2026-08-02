@@ -1913,6 +1913,31 @@ let freeSelected = new Set();
 let plan = null;
 let sessions = [];
 let lastPerformance = {}; // { [exerciseId]: [{reps, weight}, ...] } — letzter geloggter Stand je Übung
+
+// Baut lastPerformance komplett neu aus dem aktuellen sessions-Array auf (gleiche Struktur/
+// Reihenfolge wie in endSession() beim Anhängen: pro Übung die letzten bis zu 3 Sessions,
+// neueste zuerst). Wird nach dem Löschen einer Trainingseinheit aufgerufen, damit dort
+// eingetragene Gewichte/Wdh. NICHT mehr als "letztes Mal"-Referenz bzw. Vorbelegung
+// (buildEntry()) oder für Steigerungs-Vorschläge (checkPerformanceSuggestion()) verwendet
+// werden — inkl. des Falls, dass eine Übung ausschließlich in der gelöschten Einheit
+// vorkam: dann bleibt für ihre exerciseId schlicht kein Eintrag übrig, sie gilt also wieder
+// als noch nie durchgeführt. Muss nach jeder Änderung an "sessions" (Löschen, Undo-Wieder-
+// herstellen, Import) aufgerufen und anschließend gespeichert werden.
+function rebuildLastPerformance(){
+  const rebuilt = {};
+  // sessions liegt chronologisch aufsteigend vor (siehe endSession(): sessions.push(...)),
+  // daher rückwärts iterieren, um "neueste zuerst" pro Übung aufzubauen.
+  for (let i = sessions.length - 1; i >= 0; i--){
+    const session = sessions[i];
+    if (!session || !session.entries) continue;
+    session.entries.forEach(e => {
+      if (!e.exerciseId || !e.sets || !e.sets.length) return;
+      const list = rebuilt[e.exerciseId] || (rebuilt[e.exerciseId] = []);
+      if (list.length < 3) list.push(e.sets.map(s => ({ ...s })));
+    });
+  }
+  lastPerformance = rebuilt;
+}
 let active = null;      // { startedAt, entries: [{exerciseId, name, target, sets:[{reps,weight}]}] }
 // Steuert, was in der letzten Spalte pro Satz während des aktiven Trainings angezeigt wird —
 // per Klick auf den Spaltenkopf ("VOL"/"10RM"/"1RM") umschaltbar, siehe renderActive().
@@ -3612,7 +3637,8 @@ function openHistoryContextMenu(sessionId){
     const removedIndex = sessions.findIndex(x => x.id === sessionId);
     const removedSession = sessions[removedIndex];
     sessions = sessions.filter(x => x.id !== sessionId);
-    deleteSessionStorage(removedSession).then(() => {
+    rebuildLastPerformance();
+    Promise.all([deleteSessionStorage(removedSession), saveJSON('lastPerformance', lastPerformance)]).then(() => {
       // Aktuelle Ansicht (Startseite oder Workouts-Übersicht) neu rendern, ohne die
       // Navigation zu verändern — history.back() wäre hier falsch, da man ja gerade
       // aus der Liste heraus gelöscht hat und nicht aus der Detailseite kommt.
@@ -3620,7 +3646,8 @@ function openHistoryContextMenu(sessionId){
       else renderHome();
       showUndoToast('Einheit gelöscht.', async () => {
         sessions.splice(removedIndex, 0, removedSession);
-        await saveSessionAt(removedSession, removedIndex);
+        rebuildLastPerformance();
+        await Promise.all([saveSessionAt(removedSession, removedIndex), saveJSON('lastPerformance', lastPerformance)]);
         if (history.state && history.state.view === 'workoutsOverview') renderWorkoutsOverview();
         else renderHome();
       });
@@ -9923,11 +9950,13 @@ function renderSessionDetail(id){
     const removedIndex = sessions.findIndex(x => x.id === id);
     const removedSession = sessions[removedIndex];
     sessions = sessions.filter(x => x.id !== id);
-    await deleteSessionStorage(removedSession);
+    rebuildLastPerformance();
+    await Promise.all([deleteSessionStorage(removedSession), saveJSON('lastPerformance', lastPerformance)]);
     history.back();
     showUndoToast('Einheit gelöscht.', async () => {
       sessions.splice(removedIndex, 0, removedSession);
-      await saveSessionAt(removedSession, removedIndex);
+      rebuildLastPerformance();
+      await Promise.all([saveSessionAt(removedSession, removedIndex), saveJSON('lastPerformance', lastPerformance)]);
       goSessionDetail(removedSession.id);
     });
   };
