@@ -8443,19 +8443,27 @@ function applyPerfTimeSuggestionAndPropagate(entry, si, newSeconds){
 }
 
 // Trägt weight/reps (bzw. seconds) in Satz "si" ein und füllt dabei — wie beim normalen
-// Abhaken eines Satzes — alle direkt folgenden, noch komplett leeren Sätze automatisch mit
-// denselben Werten vor. Wird beim manuellen Abhaken eines Satzes genutzt (siehe checkset-
-// Handler); für den Performancemodus-Vorschlag siehe stattdessen applyPerfSuggestionAndPropagate().
+// Abhaken eines Satzes — alle direkt folgenden Sätze automatisch mit denselben Werten vor,
+// SOLANGE diese Folge-Sätze noch nicht manuell vom Nutzer bearbeitet wurden. Das gilt sowohl
+// für komplett leere Sätze als auch für Sätze, die selbst nur durch eine frühere automatische
+// Propagierung befüllt wurden (autoFilled=true) — bearbeitet der Nutzer z. B. Satz 2 nach
+// einer ersten Propagierung von Satz 1 erneut und hakt ihn ab, sollen die neuen Werte auch
+// wieder in die (noch immer nur automatisch befüllten) Sätze 3, 4, … übernommen werden.
+// Sobald ein Satz auf einen echten manuellen Eintrag trifft (autoFilled=false, siehe die
+// onchange-Handler der Eingabefelder), wird ab dort nichts mehr überschrieben.
 function applySetValueAndPropagate(entry, si, values){
   Object.assign(entry.sets[si], values);
+  entry.sets[si].autoFilled = false; // gerade bestätigter Satz gilt als final, nicht mehr automatisch
   const doneSet = entry.sets[si];
   for (let j = si + 1; j < entry.sets.length; j++){
     const nextSet = entry.sets[j];
-    const isUntouched = entry.type === 'time'
+    const isEmpty = entry.type === 'time'
       ? (nextSet.seconds === null || nextSet.seconds === undefined)
       : (nextSet.reps === null || nextSet.reps === undefined) && (nextSet.weight === null || nextSet.weight === undefined);
-    if (!isUntouched) break; // ab dem ersten bereits befüllten Satz nicht weiter überschreiben
+    const isOverwritable = isEmpty || nextSet.autoFilled === true;
+    if (!isOverwritable) break; // ab dem ersten manuell bearbeiteten Satz nicht weiter überschreiben
     Object.keys(values).forEach(key => { nextSet[key] = doneSet[key]; });
+    nextSet.autoFilled = true;
   }
 }
 
@@ -8598,7 +8606,7 @@ function wireThumbDrag(){
   const LONG_PRESS_MS = 350;
   const MOVE_CANCEL_PX = 8;
   const SUPERSET_HOLD_MS = 2000; // "eine Weile halten" = 2 Sekunden, siehe Anforderung
-  const UNLINK_HOLD_MS = 5000; // Supersatz auflösen: 5 Sekunden halten ohne zu ziehen
+  const UNLINK_HOLD_MS = 3000; // Supersatz auflösen: 3 Sekunden halten ohne zu ziehen
 
   units.forEach((unit, unitIdx) => {
     const rootEl = unitEls[unitIdx];
@@ -9203,6 +9211,7 @@ function renderActive(){
           const val = input.value === '' ? null : Number(input.value);
           const field = input.dataset.field;
           entry.sets[si][field] = val;
+          entry.sets[si].autoFilled = false;
           persistActiveSession();
         };
         if (entry.type !== 'time'){
@@ -9227,6 +9236,7 @@ function renderActive(){
           const min = minEl.value === '' ? 0 : Number(minEl.value);
           const sec = secEl.value === '' ? 0 : Number(secEl.value);
           entry.sets[si].seconds = (minEl.value === '' && secEl.value === '') ? null : (min * 60 + sec);
+          entry.sets[si].autoFilled = false;
           persistActiveSession();
         };
         [minEl, secEl].forEach(el => {
@@ -9252,6 +9262,7 @@ function renderActive(){
             openPlankTimerOverlay((sec) => {
               secondsInput.value = sec;
               entry.sets[si].seconds = sec;
+              entry.sets[si].autoFilled = false;
               persistActiveSession();
             });
           };
@@ -9299,9 +9310,13 @@ function renderActive(){
     });
 
     document.getElementById('btnAddSet').onclick = () => {
+      // autoFilled:true, da die Werte hier nur von "last" übernommen wurden, nicht vom
+      // Nutzer selbst eingetippt — ein neuer Satz soll genauso überschreibbar bleiben wie
+      // ein leerer, damit applySetValueAndPropagate() ihn beim Abhaken eines VORHERIGEN
+      // Satzes weiterhin korrekt mit dessen (ggf. gerade bearbeiteten) Werten befüllt.
       if (entry.type === 'time'){
         const last = entry.sets[entry.sets.length - 1];
-        const newSet = { seconds: (last && last.seconds) || null, done: false };
+        const newSet = { seconds: (last && last.seconds) || null, done: false, autoFilled: true };
         cardioFieldsFor(currentPlanEx).forEach(f => { newSet[f.key] = (last && last[f.key]) ?? null; });
         entry.sets.push(newSet);
       } else {
@@ -9309,7 +9324,8 @@ function renderActive(){
         entry.sets.push({
           reps: (last && last.reps) || null,
           weight: (last && last.weight) || entry.target.weight || null,
-          done: false
+          done: false,
+          autoFilled: true
         });
       }
       renderActive();
@@ -10498,6 +10514,8 @@ function openSessionEntryEditor(session, exerciseId){
     const planEx = plan.exercises.find(x => x.id === draftEntry.exerciseId);
     const isTime = draftEntry.type === 'time';
     const noWeight = !!(planEx && planEx.noWeight);
+    // Reihenfolge Wdh vor kg, passend zur Anzeige an anderer Stelle in der App (z. B.
+    // "10×20kg" in der Trainingsdetail-Liste, siehe setsLine weiter unten in dieser Datei).
     const setsHTML = draftEntry.sets.map((set, si) => isTime ? `
       <div class="set-row set-row-time" data-set="${si}">
         <span class="set-idx">${si+1}</span>
@@ -10507,11 +10525,30 @@ function openSessionEntryEditor(session, exerciseId){
     ` : `
       <div class="set-row" data-set="${si}">
         <span class="set-idx">${si+1}</span>
-        <input type="number" inputmode="decimal" enterkeyhint="done" placeholder="kg" step="0.5" value="${noWeight ? '' : (set.weight ?? '')}" data-field="weight" data-si="${si}" ${noWeight ? 'disabled' : ''}>
         <input type="number" inputmode="numeric" enterkeyhint="done" placeholder="Wdh" value="${set.reps ?? ''}" data-field="reps" data-si="${si}">
+        <input type="number" inputmode="decimal" enterkeyhint="done" placeholder="kg" step="0.5" value="${noWeight ? '' : (set.weight ?? '')}" data-field="weight" data-si="${si}" ${noWeight ? 'disabled' : ''}>
         <button class="icon-x" data-removeset="${si}" aria-label="Satz ${si+1} entfernen">✕</button>
       </div>
     `).join('');
+    // Kleine graue Spaltenbeschriftung über den Eingabefeldern (Wdh/kg bzw. Sek.), damit
+    // klar ist, welches Feld was ist — ohne sich allein auf die Platzhalter zu verlassen.
+    const setsHeaderHTML = draftEntry.sets.length ? (isTime ? `
+      <div class="sets-header sets-header-time">
+        <span class="sets-header-cell">#</span>
+        <span class="sets-header-cell">Sek.</span>
+        <span class="sets-header-cell"></span>
+        <span class="sets-header-cell"></span>
+      </div>
+    ` : `
+      <div class="sets-header">
+        <span class="sets-header-cell">#</span>
+        <span class="sets-header-cell">Wdh</span>
+        <span class="sets-header-cell">kg</span>
+        <span class="sets-header-cell"></span>
+        <span class="sets-header-cell"></span>
+        <span class="sets-header-cell"></span>
+      </div>
+    `) : '';
 
     overlay.innerHTML = `
       <div class="add-exercise-modal" style="max-height:none;">
@@ -10521,6 +10558,7 @@ function openSessionEntryEditor(session, exerciseId){
         </div>
         <div class="new-exercise-modal-body">
           <button class="btn btn-ghost" id="sessionEntryEditorSwap" style="width:100%; margin-bottom:14px;">Übung austauschen</button>
+          ${setsHeaderHTML}
           <div class="sets" id="sessionEntryEditorSets">${setsHTML}</div>
           <div class="add-set-row">
             <button class="add-set" id="sessionEntryEditorAddSet" aria-label="Satz hinzufügen">+</button>
@@ -10668,9 +10706,16 @@ function openSessionEntryExercisePicker(draftEntry, onPick){
         if (!ex) return;
         const newType = ex.type === 'time' ? 'time' : 'reps';
         const setCount = Math.max(1, draftEntry.sets.length || ex.sets || 3);
-        const newSets = Array.from({length: setCount}, () => newType === 'time'
-          ? { seconds: null, done: true }
-          : { reps: null, weight: null, done: true });
+        // Bisherige Werte je Satz übernehmen (gleicher Index), damit man beim Austauschen
+        // nicht wieder bei leeren Feldern anfängt — nur sinnvoll, wenn beide Übungen
+        // denselben Typ haben (Wdh/kg <-> Wdh/kg bzw. Sekunden <-> Sekunden).
+        const sameType = draftEntry.type === newType;
+        const newSets = Array.from({length: setCount}, (_, idx) => {
+          const prev = sameType ? (draftEntry.sets[idx] || {}) : {};
+          return newType === 'time'
+            ? { seconds: prev.seconds ?? null, done: true }
+            : { reps: prev.reps ?? null, weight: prev.weight ?? null, done: true };
+        });
         const newEntry = {
           exerciseId: ex.id,
           name: ex.name,
