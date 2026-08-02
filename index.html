@@ -318,9 +318,9 @@ html[data-theme="light"] #btnSummaryShare{ color:#000; border-color:#000; }
 /* ---------- Progress list ---------- */
 .progress-row{
   display:flex; justify-content:space-between; align-items:center;
-  padding: 14px 16px; background: var(--surface); border:1px solid var(--border);
-  border-radius: var(--radius); margin-bottom:10px;
+  padding: 10px 16px; border-bottom:1px solid var(--border);
 }
+.progress-row:last-child{ border-bottom:none; }
 .progress-row:active{ background: var(--surface-2); }
 .progress-name{ font-weight:600; }
 .progress-meta{ font-family:'JetBrains Mono', monospace; font-size:12px; color: var(--muted); margin-top:2px; }
@@ -4166,6 +4166,8 @@ function exerciseHistory(name){
         volumeAvg: m.hasData ? m.volumeAvg : 0,
         rm10Max: m.hasData ? m.rm10Max : 0,
         rm10Avg: m.hasData ? m.rm10Avg : 0,
+        rm1Max: m.hasData ? m.rm1Max : 0,
+        rm1Avg: m.hasData ? m.rm1Avg : 0,
         weightAvg: m.hasData ? m.weightAvg : 0,
         repsMax: m.hasData ? m.repsMax : 0,
         repsAvg: m.hasData ? m.repsAvg : 0
@@ -4230,6 +4232,7 @@ function computeExerciseMetrics(entry, planEx){
   const setWeights = validSets.map(s => effectiveSetWeight(planEx, s.weight));
   const setReps = validSets.map(s => s.reps);
   const set1RMs = validSets.map(s => estimate1RM(effectiveSetWeight(planEx, s.weight), s.reps));
+  const set10RMs = validSets.map(s => estimate10RM(effectiveSetWeight(planEx, s.weight), s.reps));
   const avg = arr => arr.reduce((a,v) => a+v, 0) / arr.length;
   return {
     setsCount: entry.sets.length,
@@ -4237,8 +4240,10 @@ function computeExerciseMetrics(entry, planEx){
     volume: setVolumes.reduce((a,v) => a+v, 0),
     volumeMax: Math.max(...setVolumes),
     volumeAvg: avg(setVolumes),
-    rm10Max: Math.max(...set1RMs),
-    rm10Avg: avg(set1RMs),
+    rm10Max: Math.max(...set10RMs),
+    rm10Avg: avg(set10RMs),
+    rm1Max: Math.max(...set1RMs),
+    rm1Avg: avg(set1RMs),
     weightMax: Math.max(...setWeights),
     weightAvg: avg(setWeights),
     repsMax: Math.max(...setReps),
@@ -4284,7 +4289,7 @@ function computeExerciseMetricComparison(session, exerciseId){
   // länger halten ist ebenso "besser" wie mehr Gewicht/Wdh bei Kraftübungen.
   const METRIC_KEYS = entry.type === 'time'
     ? ['secondsMax', 'secondsAvg']
-    : ['volume', 'volumeMax', 'volumeAvg', 'rm10Max', 'rm10Avg', 'weightMax', 'weightAvg', 'repsMax', 'repsAvg'];
+    : ['volume', 'volumeMax', 'volumeAvg', 'rm10Max', 'rm10Avg', 'rm1Max', 'rm1Avg', 'weightMax', 'weightAvg', 'repsMax', 'repsAvg'];
 
   function pctGain(curr, best){
     if (curr === null || curr === undefined || best === null || best === undefined || best === 0) return null;
@@ -4320,6 +4325,8 @@ const METRIC_LABELS = {
   volumeAvg: 'Volumen Ø',
   rm10Max: '10RM Max',
   rm10Avg: '10RM Ø',
+  rm1Max: '1RM Max',
+  rm1Avg: '1RM Ø',
   weightMax: 'Gewicht Max',
   weightAvg: 'Gewicht Ø',
   repsMax: 'Wdh Max',
@@ -4329,7 +4336,7 @@ const METRIC_LABELS = {
 };
 const METRIC_UNITS = {
   volume: 'kg', volumeMax: 'kg', volumeAvg: 'kg',
-  rm10Max: 'kg', rm10Avg: 'kg', weightMax: 'kg', weightAvg: 'kg',
+  rm10Max: 'kg', rm10Avg: 'kg', rm1Max: 'kg', rm1Avg: 'kg', weightMax: 'kg', weightAvg: 'kg',
   repsMax: 'Wdh', repsAvg: 'Wdh'
 };
 
@@ -4852,7 +4859,7 @@ function renderProgressList(){
     const itemsHTML = groupNames.map(name => {
       const hist = exerciseHistory(name);
       const last = hist[hist.length - 1];
-      const meta = `${hist.length} Einheiten protokolliert · zuletzt ${last.isTime ? fmtSec(last.maxSeconds) : last.maxWeight + ' kg'}`;
+      const meta = `${hist.length} x · zuletzt ${last.isTime ? fmtSec(last.maxSeconds) : last.maxWeight + ' kg'}`;
       return `
         <div class="progress-row" data-name="${name}" role="button" tabindex="0">
           <div>
@@ -4954,6 +4961,8 @@ function renderExerciseProgress(name){
     const volumeAvgPoints = agg('volumeAvg').map(p => ({ ...p, value: Math.round(p.value * 10) / 10 }));
     const rm10MaxPoints = agg('rm10Max').map(p => ({ ...p, value: Math.round(p.value * 10) / 10 }));
     const rm10AvgPoints = agg('rm10Avg').map(p => ({ ...p, value: Math.round(p.value * 10) / 10 }));
+    const rm1MaxPoints = agg('rm1Max').map(p => ({ ...p, value: Math.round(p.value * 10) / 10 }));
+    const rm1AvgPoints = agg('rm1Avg').map(p => ({ ...p, value: Math.round(p.value * 10) / 10 }));
     const repsMaxPoints = agg('repsMax');
     const repsAvgPoints = agg('repsAvg').map(p => ({ ...p, value: Math.round(p.value * 10) / 10 }));
     // Läuft die aggregierten Volumen-Punkte einfach kumulativ auf — zeigt das INSGESAMT mit
@@ -4971,6 +4980,8 @@ function renderExerciseProgress(name){
       ${chartAccordionHTML(exerciseProgressChartOpen, 'volumeAvg', 'Volumen Ø (kg)', volumeAvgPoints, cssVar('--accent'), v => v.toLocaleString('de-DE') + ' kg', buildLineChart(volumeAvgPoints, cssVar('--accent')))}
       ${chartAccordionHTML(exerciseProgressChartOpen, 'rm10Max', '10RM Max (geschätzt, kg)', rm10MaxPoints, cssVar('--accent'), v => v.toLocaleString('de-DE') + ' kg', buildLineChart(rm10MaxPoints, cssVar('--accent')))}
       ${chartAccordionHTML(exerciseProgressChartOpen, 'rm10Avg', '10RM Ø (geschätzt, kg)', rm10AvgPoints, cssVar('--accent'), v => v.toLocaleString('de-DE') + ' kg', buildLineChart(rm10AvgPoints, cssVar('--accent')))}
+      ${chartAccordionHTML(exerciseProgressChartOpen, 'rm1Max', '1RM Max (geschätzt, kg)', rm1MaxPoints, cssVar('--accent'), v => v.toLocaleString('de-DE') + ' kg', buildLineChart(rm1MaxPoints, cssVar('--accent')))}
+      ${chartAccordionHTML(exerciseProgressChartOpen, 'rm1Avg', '1RM Ø (geschätzt, kg)', rm1AvgPoints, cssVar('--accent'), v => v.toLocaleString('de-DE') + ' kg', buildLineChart(rm1AvgPoints, cssVar('--accent')))}
       ${chartAccordionHTML(exerciseProgressChartOpen, 'repsMax', 'Wdh Max je Einheit', repsMaxPoints, cssVar('--accent'), v => v.toLocaleString('de-DE'), buildLineChart(repsMaxPoints, cssVar('--accent')))}
       ${chartAccordionHTML(exerciseProgressChartOpen, 'repsAvg', 'Wdh Ø je Einheit', repsAvgPoints, cssVar('--accent'), v => v.toLocaleString('de-DE'), buildLineChart(repsAvgPoints, cssVar('--accent')))}
     `;
