@@ -163,21 +163,6 @@ html[data-theme="light"] #btnSummaryShare{ color:#000; border-color:#000; }
 .btn-ghost{ background:none; color:var(--muted); border:1px solid var(--border); font-weight:500; }
 .btn-small{ padding:8px 14px; font-size:13px; width:auto; display:inline-block; }
 
-/* Wenn eine freie Hintergrundfarbe gewählt ist (siehe currentBgColor()/applyTheme()), sitzen
-   .gear und .btn-ghost direkt und ohne umgebende Karte auf dieser Farbe. Fester dunkler Rand/
-   Text (var(--border)/var(--muted)) kann dann je nach gewählter Farbe fast unsichtbar werden
-   (z. B. dunkelgraue Umrisse auf einem satten Orange). Statt einer festen Farbe werden Rand,
-   Füllung und Text hier aus --on-bg-* abgeleitet, die applyTheme() live aus der jeweiligen
-   Hintergrundfarbe berechnet (hell/dunkel je nach deren Leuchtdichte) — die Buttons wirken
-   dadurch immer ausgefüllt und lesbar, unabhängig davon, welche Farbe gerade gewählt ist. */
-html[data-custom-bg="1"] .gear,
-html[data-custom-bg="1"] .btn-ghost{
-  background: var(--on-bg-surface);
-  border-color: var(--on-bg-border);
-  color: var(--on-bg-text);
-}
-html[data-custom-bg="1"] .gear:hover{ border-color: var(--on-bg-text); }
-
 /* ---------- History table ---------- */
 .section-label{
   font-size:12px; text-transform:uppercase; letter-spacing:1.5px; color: var(--muted);
@@ -2365,22 +2350,8 @@ function applyTheme(){
   const root = document.documentElement.style;
   if (bgColor){
     root.setProperty('--bg', bgColor.hex);
-    document.documentElement.setAttribute('data-custom-bg', '1');
-    // Elemente, die direkt (ohne umgebende Karte) auf der freien Hintergrundfarbe sitzen
-    // (siehe .gear/.btn-ghost-Regel im CSS), brauchen Rand/Füllung/Text passend zur jeweils
-    // gewählten Farbe statt fest verdrahteter Dark-/Light-Mode-Werte — sonst z. B. dunkelgraue
-    // Umrisse auf hellem Orange kaum sichtbar. Hell/Dunkel wird per Luminanz der Hintergrund-
-    // farbe entschieden (contrastTextColor liefert schon "hell oder dunkel besser lesbar").
-    const onBgIsDark = contrastTextColor(bgColor.hex) === '#121316';
-    root.setProperty('--on-bg-text', onBgIsDark ? '#121316' : '#ffffff');
-    root.setProperty('--on-bg-border', onBgIsDark ? 'rgba(0,0,0,0.32)' : 'rgba(255,255,255,0.38)');
-    root.setProperty('--on-bg-surface', onBgIsDark ? 'rgba(0,0,0,0.10)' : 'rgba(255,255,255,0.16)');
   } else {
     root.removeProperty('--bg');
-    document.documentElement.removeAttribute('data-custom-bg');
-    root.removeProperty('--on-bg-text');
-    root.removeProperty('--on-bg-border');
-    root.removeProperty('--on-bg-surface');
   }
 }
 
