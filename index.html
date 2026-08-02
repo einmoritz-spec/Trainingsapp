@@ -1081,8 +1081,8 @@ html[data-theme="light"] .plan-row-edit-btn img{ filter: none; }
   font-family:'JetBrains Mono', monospace; font-weight:700; font-size:32px; color: var(--muted);
 }
 .exercise-image-popup-info{
-  margin-top:16px; padding:14px; border-radius: var(--radius); border:1px dashed var(--border);
-  font-size:13px; color: var(--muted); font-style:italic; line-height:1.5;
+  margin-top:16px; padding:14px; border-radius: var(--radius); border:1px solid var(--border);
+  font-size:13px; color: var(--muted); line-height:1.5;
 }
 
 /* ---------- Übungen: Suche, Muskelgruppen-Akkordeon, Export/Import ---------- */
@@ -1620,6 +1620,244 @@ function cardioSetSummary(planEx, set){
   return parts.join(' · ');
 }
 
+
+// Übungsinfos (Kurzbeschreibung + "Worauf achten") für das Info-Feld im
+// Übungsbild-Popup (siehe openExerciseImagePopup). Zuordnung über die
+// stabile Übungs-ID (ex.id), damit umbenannte Übungen weiterhin die
+// passende Info anzeigen.
+const EXERCISE_INFO = {
+  e9: { // Beinpresse
+    desc: 'Mehrgelenkige Übung für Quadrizeps, Gesäß und hintere Oberschenkelmuskulatur – das Gewicht wird mit den Beinen weggedrückt.',
+    tips: [
+      'Knie in Fußrichtung bewegen, nicht nach innen einknicken lassen',
+      'Knie oben nicht komplett durchdrücken',
+      'Unterer Rücken und Gesäß bleiben während der ganzen Bewegung an der Polsterung',
+      'Volle, aber schmerzfreie Bewegungsamplitude nutzen'
+    ]
+  },
+  e10: { // Beinstrecker
+    desc: 'Isolationsübung für den Quadrizeps im Sitzen – die Unterschenkel werden gegen Widerstand gestreckt.',
+    tips: [
+      'Drehpunkt der Maschine auf Höhe des Kniegelenks einstellen',
+      'Schienbeinpolster oberhalb des Sprunggelenks positionieren',
+      'Knie zeigen konstant nach vorne, nicht nach innen oder außen drehen',
+      'Kontrolliert strecken und wieder absenken, Gewicht nicht hochschnellen lassen'
+    ]
+  },
+  e11: { // Beinbeuger
+    desc: 'Isolationsübung für die ischiocrurale Muskulatur (Hamstrings), den Gegenspieler des Beinstreckers.',
+    tips: [
+      'Hüfte während der Bewegung auf der Bank/dem Sitz lassen, nicht mit hochziehen',
+      'Bewegung langsam und kontrolliert ausführen, besonders beim Zurückführen',
+      'Volle Bewegungsamplitude nutzen, unten aber nicht mit Schwung ausklinken',
+      'Zehen leicht Richtung Schienbein anziehen erhöht die Spannung in den Hamstrings'
+    ]
+  },
+  e12: { // Abduktoren
+    desc: 'Trainiert die äußere Hüft- und Gesäßmuskulatur (u. a. Glutaeus medius) – die Beine werden gegen Widerstand nach außen gedrückt.',
+    tips: [
+      'Rücken und Gesäß fest an Rückenlehne und Sitzpolster halten',
+      'Bewegung langsam und kontrolliert, kein Schwungholen',
+      'Gewicht am Ende der Bewegung nicht komplett ablegen, Spannung halten',
+      'Oberkörper aufrecht, kein Rundrücken'
+    ]
+  },
+  e13: { // Adduktoren
+    desc: 'Trainiert die Oberschenkelinnenseite (Adduktoren) – die Beine werden gegen Widerstand zusammengeführt.',
+    tips: [
+      'Rücken aufrecht an der Lehne, Knie mittig auf den Polstern',
+      'Gleichmäßiges Tempo, keine ruckartigen Bewegungen',
+      'Gewicht zwischen den Wiederholungen nicht komplett ablegen',
+      'Ruhig weiteratmen, Luft nicht anhalten'
+    ]
+  },
+  e1: { // Klimmzugmaschine
+    desc: 'Assistierte Klimmzugvariante: Man zieht sich selbst am Griff nach oben, ein Gegengewicht (meist über ein Knie- oder Fußpolster) erleichtert die Bewegung. Trainiert vor allem den Latissimus (breiter Rückenmuskel), unterstützt durch den Bizeps.',
+    tips: [
+      'Griffbreite etwas breiter als schulterbreit',
+      'Sich selbst am Griff nach oben ziehen (wie bei einem klassischen Klimmzug), nicht eine Stange nach unten ziehen',
+      'Zug über die Ellenbogen einleiten, nicht nur mit den Armen ziehen',
+      'Körper ruhig nach oben ziehen, nicht durch Schwung unterstützen',
+      'Kinn bis auf Griffhöhe hochziehen, dann kontrolliert wieder absenken'
+    ]
+  },
+  e2: { // Latzug
+    desc: 'Kabelzugvariante für den Latissimus, klassisch mit breitem Griff von oben zur Brust gezogen.',
+    tips: [
+      'Zug beginnt in den Schulterblättern (nach unten/hinten ziehen), nicht in den Armen',
+      'Leichtes Hohlkreuz halten, keinen Schwung aus dem Oberkörper holen',
+      'Stange vor dem Körper zur oberen Brust ziehen, nicht hinter den Nacken',
+      'Oben kontrolliert bis zur Streckung zurückführen, ohne das Gewicht abzusetzen'
+    ]
+  },
+  e3: { // Rudern Kabelturm
+    desc: 'Sitzend zum Bauch/unteren Brustbereich gezogen, trainiert vor allem den mittleren Rücken (Rhomboiden) und die hintere Schulter.',
+    tips: [
+      'Rücken aufrecht halten, kein Rundrücken beim Ziehen',
+      'Ellenbogen nah am Körper vorbeiführen',
+      'Schulterblätter am Ende der Bewegung zusammenziehen',
+      'Kein Schwung durch Vor-/Zurücklehnen des Oberkörpers'
+    ]
+  },
+  e17: { // Rudermaschine
+    desc: 'Ähnlich wie Rudern am Kabelzug, meist mit fixierter Sitz- oder Brustposition für eine stabilere Ausführung.',
+    tips: [
+      'Oberkörper stabil an der Polsterung halten',
+      'Zugbewegung aus dem Rücken einleiten, nicht nur aus den Armen',
+      'Schulterblätter am Ende zusammenziehen und kurz halten',
+      'Rückweg langsam und kontrolliert'
+    ]
+  },
+  e14: { // Rückenstrecker
+    desc: 'Übung für den unteren Rücken (Erector spinae) am Hyperextension-Gerät – der Oberkörper wird kontrolliert gesenkt und wieder angehoben.',
+    tips: [
+      'Bewegung kommt aus der Hüfte, nicht aus dem unteren Rücken',
+      'Oben nicht überstrecken (kein starkes Hohlkreuz, Kopf nicht in den Nacken legen)',
+      'Blick nach unten Richtung Boden statt nach oben',
+      'Langsam und kontrolliert ausführen, kein Schwung'
+    ]
+  },
+  e20: { // Rückenstrecker Maschine
+    desc: 'Maschinen-Variante des Rückenstreckers mit einstellbarem Widerstand statt reinem Körpergewicht.',
+    tips: [
+      'Gesäß ganz nach hinten ans Polster schieben',
+      'Drehachse der Maschine liegt auf Hüfthöhe',
+      'Rücken während der ganzen Bewegung in neutraler Haltung halten, nicht runden',
+      'Oben Brust leicht herausstrecken, aber nicht überstrecken'
+    ]
+  },
+  e15: { // Butterfly
+    desc: 'Isolationsübung für die Brustmuskulatur – die Arme werden seitlich mit leicht gebeugten Ellenbogen vor dem Körper zusammengeführt.',
+    tips: [
+      'Leichte Beugung in den Ellenbogen beibehalten, Arme nicht komplett durchstrecken',
+      'Bewegung kommt aus der Brust, Schultern bleiben unten und stabil',
+      'Rücken und Schulterblätter bleiben während der ganzen Bewegung an der Lehne',
+      'Kontrolliert zurückführen, keine ruckartige Dehnung am Ende'
+    ]
+  },
+  e16: { // Brustpresse
+    desc: 'Mehrgelenkige Drückübung für die Brustmuskulatur, unterstützt durch den Trizeps.',
+    tips: [
+      'Schulterblätter vor dem Start zusammen- und nach unten ziehen',
+      'Handgelenke gerade halten',
+      'Griffe oben nicht komplett durchdrücken/einrasten lassen, Spannung halten',
+      'Ellenbogen nicht zu weit nach hinten unten absinken lassen'
+    ]
+  },
+  e18: { // Schulterpresse
+    desc: 'Drückübung für die Schultermuskulatur (vorderer/seitlicher Deltamuskel), unterstützt durch den Trizeps.',
+    tips: [
+      'Unteren Rücken nicht ins Hohlkreuz drücken, Rumpf stabil halten',
+      'Gewicht nach oben drücken, nicht nach vorne',
+      'Ellenbogen oben nicht komplett durchdrücken',
+      'Kontrolliert absenken, bis die Oberarme etwa parallel zum Boden sind'
+    ]
+  },
+  e19: { // Seitheben
+    desc: 'Isolationsübung für den seitlichen Deltamuskel – die Arme werden seitlich bis auf Schulterhöhe angehoben.',
+    tips: [
+      'Eher leichte Gewichte wählen, die Übung wird schnell durch Schwung verfälscht',
+      'Arme nur bis Schulterhöhe anheben, nicht darüber',
+      'Ellenbogen minimal gebeugt, die Bewegung kommt aus der Schulter',
+      'Oberkörper ruhig halten, kein Mitschwingen aus dem Rücken'
+    ]
+  },
+  e4: { // Trizeps drücken Kabelturm
+    desc: 'Isolationsübung für den Trizeps – Griff oder Seil wird von der Brust aus nach unten gedrückt.',
+    tips: [
+      'Oberarme eng am Körper fixiert, nur die Unterarme bewegen sich',
+      'Ellenbogen nicht nach vorne wandern lassen',
+      'Unten die Arme strecken, ohne die Ellenbogen durchzudrücken',
+      'Kontrolliert zurückführen, Gewicht nicht hochschnellen lassen'
+    ]
+  },
+  e5: { // Bizeps Curls Kabelturm
+    desc: 'Isolationsübung für den Bizeps am Kabelzug.',
+    tips: [
+      'Oberarme bleiben während der ganzen Bewegung ruhig am Körper',
+      'Kein Schwung aus Schultern oder Rücken holen',
+      'Handgelenke gerade halten, nicht abknicken',
+      'Oben nicht überstrecken, unten die Arme nicht komplett durchhängen lassen'
+    ]
+  },
+  e6: { // Situps
+    desc: 'Klassische Bauchübung – der Oberkörper wird aus der Rückenlage aufgerichtet.',
+    tips: [
+      'Bewegung kommt aus der Bauchmuskulatur, kein Schwung aus Armen oder Kopf',
+      'Nacken nicht mit den Händen hochziehen',
+      'Untere Rippen Richtung Becken bewegen statt nur den Kopf anzuheben',
+      'Bei Rückenbeschwerden eher Crunches (kleinere Bewegung) statt volle Situps'
+    ]
+  },
+  e7: { // Beinheben
+    desc: 'Trainiert vor allem die untere Bauchmuskulatur und den Hüftbeuger – die Beine werden aus der Rücken- oder Hanglage angehoben.',
+    tips: [
+      'Unteren Rücken während der Übung am Boden/Polster halten, kein Hohlkreuz',
+      'Bewegung langsam und kontrolliert, Beine nicht schwingen lassen',
+      'Beine nicht komplett gestreckt tief absenken, wenn sich dabei der Rücken wölbt',
+      'Beim Anheben ausatmen'
+    ]
+  },
+  e8: { // Plank
+    desc: 'Statische Übung zur Rumpfstabilisation – der Körper wird in einer geraden Linie auf Unterarmen und Zehen gehalten.',
+    tips: [
+      'Körper von Kopf bis Ferse in einer geraden Linie halten',
+      'Kein Hohlkreuz und kein Rundrücken/Po nach oben',
+      'Bauch- und Gesäßmuskulatur aktiv anspannen',
+      'Gleichmäßig weiteratmen, Luft nicht anhalten'
+    ]
+  },
+  e21: { // Laufband
+    desc: 'Ausdauertraining, beansprucht das Herz-Kreislauf-System sowie die Beinmuskulatur.',
+    tips: [
+      'Aufrechte Haltung, nicht am Geländer festhalten',
+      'Schrittlänge und Tempo an das eigene Niveau anpassen',
+      'Besonders bei Neigung: kontrolliert ein- und aussteigen',
+      'Ausreichend trinken, vor allem bei längeren Einheiten'
+    ]
+  },
+  e22: { // Stepper
+    desc: 'Ausdauertraining mit steigender Bewegung, beansprucht Herz-Kreislauf-System und Beinmuskulatur.',
+    tips: [
+      'Aufrecht bleiben, nicht zu weit nach vorne auf die Griffe lehnen',
+      'Volle Trittbewegung nutzen statt kleiner, hektischer Schritte',
+      'Knie in Fußrichtung halten',
+      'Gleichmäßiges Tempo statt Stop-and-Go'
+    ]
+  },
+  e23: { // Fahrrad
+    desc: 'Ausdauertraining auf dem Ergometer, beansprucht Herz-Kreislauf-System und Beinmuskulatur.',
+    tips: [
+      'Sattelhöhe so einstellen, dass die Knie in der untersten Pedalposition leicht gebeugt bleiben',
+      'Gleichmäßig treten, nicht nur mit den Oberschenkeln stoßen',
+      'Oberkörper entspannt, Schultern nicht hochziehen',
+      'Widerstand an das eigene Fitnesslevel anpassen'
+    ]
+  },
+  e24: { // Rudern (Kardio)
+    desc: 'Ganzkörper-Ausdauertraining am Rudergerät, beansprucht Herz-Kreislauf-System sowie Rücken- und Beinmuskulatur.',
+    tips: [
+      'Bewegungsreihenfolge beim Zug: erst Beine strecken, dann Oberkörper nach hinten, zuletzt Arme ziehen',
+      'Rücken beim Ziehen gerade halten, nicht runden',
+      'Rückweg in umgekehrter Reihenfolge: erst Arme, dann Oberkörper, dann Beine beugen',
+      'Griff locker halten, nicht verkrampfen'
+    ]
+  }
+};
+
+// Baut das HTML für den Infobereich im Übungsbild-Popup (Beschreibung + "Worauf achten"-Liste).
+// Fällt auf den bisherigen Platzhaltertext zurück, falls für die Übung (noch) keine Info hinterlegt ist.
+function exerciseInfoHTML(ex){
+  const info = ex && EXERCISE_INFO[ex.id];
+  if (!info) return 'Infos zur Übung folgen hier.';
+  const tipsHTML = (info.tips || []).map(t => `<li>${t}</li>`).join('');
+  return `
+    <p style="margin:0 0 10px;">${info.desc}</p>
+    <p style="margin:0 0 4px; font-weight:600; color: var(--text);">Worauf achten:</p>
+    <ul style="margin:0; padding-left:18px;">${tipsHTML}</ul>
+  `;
+}
+
 const DEFAULT_PLAN = {
   exercises: [
     { id: 'e1', name: 'Klimmzugmaschine',          sets: 3, repsMin: 8, repsMax: 12, weight: 0, category: 'oberkoerper', muscleGroup: 'Rücken',    muscles: 'Latissimus (breiter Rückenmuskel), Bizeps unterstützend', type: 'reps', bodyPart: 'pull', imageData: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAwICQsJCAwLCgsODQwOEh4UEhEREiUbHBYeLCcuLisnKyoxN0Y7MTRCNCorPVM+QkhKTk9OLztWXFVMW0ZNTkv/2wBDAQ0ODhIQEiQUFCRLMisyS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0v/wAARCADcANwDASIAAhEBAxEB/8QAHAABAAIDAQEBAAAAAAAAAAAAAAEFAwQGBwII/8QAPRAAAQMDAgMFBgMFCQEBAAAAAQACAwQFERIhBhMxQVFhcaEiMoGRscEUI0I0UmJy0QcVJDNDguHw8USS/8QAGQEBAAMBAQAAAAAAAAAAAAAAAAECBAMF/8QAGxEBAQADAQEBAAAAAAAAAAAAAAECAxEhMRL/2gAMAwEAAhEDEQA/APVUREBERAREQEREBFCIJRFiqamGliMtRI2KMdXOOAPMoPiGtp56mopopA6am081uD7OoZHothc/w+9k18v80bg9jpogHNOQcRj+qv0EosAq4CQOYBnoTsD8VjddKBkoidW0wkccBhlbk/DKDbRFA6IJREQEREBERAREQEREBERAREQEREBQpUIJXNcV3dkdOaWgvFJSXIuAja9+Tqz00jOSem/evjiq9VJqY7DZCDdKoZfJ2U0fa8+PcslFwrabHQxuipY5alhaX1MjQ6V7s7nJQUkXE/EVlu9JQX+np54ajf8AE0zHnbfsA65xsrW7V0N0oZaepjY+neNLmhxBIz4HK6Cic2ZnPBJySAD+nBxhKq301VHoliGOwt2I8iEHn9u4Yp6OuhqLPJWRPa/JjZKS0gd4OMhWV6FbWVMEEN2qbVgESNABMnduTsrWa3XC3HVTuNZAP0O99vl3rSr7iyvpZInRue5gxpfgOaTt279UG5Ja6a+WeloLk5+lwbI4Mk0lxbsNx47rEf7POGvw7oRbwC4Y5nMcXjxBJ6pNT1URjbSsbNyYwJI87kZ7PVbVuvYeeW4nI6xv2eEFBFcLrwLI2muxkuFjJDYqxozJD3B47v8Ao7l3cUjJomyRnLHjIPgsbZIKyNzSGvafeY4fULM1oa0NaMAIJREQEUKUBERAREQEREBERAREQEREBQpRBW2uyUdsqaypp2vM9ZIZJZJHanHuAPcOwL7vJ/wJHe9o9VvKn4prGU1vEbniN0ztLXfukDOfRBHDVUJKWoY7blSkZJ7D/wBKt2SMkzoe12Ouk5XiN8qKiT8VHNVPnELxpcPZY8O36Dqeu61OGLhU2m601SwyRtMrQ5oOz2k7jx2UT4m87498VPeqeB09O/ksNQHaw7G+B/6rYuAbqJwMZyVy9PWVFzudTWaSKSECOAH9ZP8AXr5YS1Mx72vqsmmjrXVMUbn07Gtie9hwWuGSSPDdbgpqS8xDntHNxlkzNnKxoaYR0eiUh7pMueewk/ZVdOx1JUyRg+4ct+H/AApVazmVdqqWxzScyI+5KBh3xXQ0k/PiyfeGx/qsVziE9C443aNYWtan6XNae0Fv3H3QWqIiAiIgIiICIiAiIgIiICIiAiIgIiIIXP8AHdCKzhypOoMkgxIxxOAD0+hK6BVHFzQ7h2ta73S0A/8A6CDxm4xupI42PnjeydoOzshpaMLo+E6GnfapqitZHyg9rWOk8AXeyew5wti11NqoqSR89I2XTLhvMbzC89+4wMdg8V0U05dDHJMaaJ7m6oKd0OrBxs4jpn4KOyLTG3yNm7XUvtcNvp3l9XUMZG8t30ZxnPdsrCGDkmlpIhlgadZ7u8+fZ8VRWgyN5bnR6nkgt7HPeT18O31XX08AhBJIL3dT9h4KMb31fZj+L+WVVNX+3uPgPordU9Sc1sp7h9lZyWDv2A5P+l9lo27/ADWeZ+i3aohlC/u0YWnbR+Y3HiUFqiIgIiICIiAiIgIiICIiAiIgIiICIiCAqji1hfYakA4ALC7xaHDKtwq7iOJ01huDGN1PNO/SPEDIRM+vM4nRuqaHUBodOXuz03K6irm5lS+QAuledLGj9LOmT3d64ennDrdE/OXM1N+Y2VnQXiaGncXuYSweyXNyfms+z1t0zlrsuH3Qm7OgMgMkUOsN78nGfh911K8YtdyqaW6wXB0hdOZmkjHVhONPyXsy7YzkZNl7lalU0h1Vk3mQrlUrMOqZO4v+6sosLh7NFIPAD1WvbB7YPc0/VZ7ocUjh3kfVYrYN/wDZ90FgiIgIiICIiAiIgIiICIiAihSgIihAUoiCAhAIwdwiIPLBbo4qm4Uwp2lkNcGA6M4bucfLClsUT6eZj4ovZdpyWDZdbbYmvqK2U4cyqrnOb4tDS37KgtlL+KmmAGWh7ug+X/nismeu3OevU1b8cdWVs9nFlw5w3QS3A1zoiRTaWwt15YXD9WPULs1X2NobQNAABDnZAOcb/wBMKwWt5YqWk9qbP8Y+quH7Md5Kpt4zIz+f7INu7HFM3+cfdRbBs4/wt+6+bufy4h/F9lktwwx3wHog3EREBQpRAUKVCCUUKUBEUIJREQEREBQpRAUKVCBkDqVU8UXb+6LLUVLMOmwGRDPVx2Hy6/BZr1ZqW90opqzm8sODvy3lhyPELz/jHhq3WE0LqJkwdK54c6SZz+gHegmDjSalbFTRW+IFjRoPNOw6Z6ea2aO8TUUTnMo4IxJv7zzn16qjqDEb1E0Y5TYow3y3z6qyu9M9jmvjBLHdA3dOJ7fjqOCLw+4CugmjaySGQP8AZOQ4OH9QupXnHDNNdLfeW1H4Z8VPUxmNxcADnq04O/Ueqt7nwrXXGsfU/wB73OmD8flwStDBgY237eqIdZUHEEh7mn6KopJeS5ri0uAJJx2Llqzhu+WjFXa7tWVE0YJdBWTBzZm9NOB0K2bXfa6umbBLZqyga5pLppQCxpHYg6i6uDxAR0OSPRbNB/lv/mx6BUb6mZ7Wa5Y3tYMNOkj6LNHWV4yIGtcwnO0ZOEHQIteifPJTtdUM0SdoGyzoJRQpQEREBQpRBClFCCUUdFKAiIgIiIIKlFHRBK5vjqgZW2mLIdrjnaWFvUZyCujWhe3FlGHAatLgcd6DgpuFAygNY6on1taS32WgDHUHv6Y8F0VmfG21NZSxOhqXEAPeQ4nfv/71WxUS8zhyoB3I5gwB5kY+a+7Y5r6SGbSGESxkjHQloCCbjM59TRStBBe+Inwy45V8OipawNdLQRhucVOPINJKuh0QatwOIvgVqUDQ6SMOAIw7qPJbleCWADtB+i07e78xn+4IMFy2ZpGB1AA8cKwtbcQE97itG4Ny6PxkPoAVvWv9mAPUE5QbqIiCMKURAREQEREBERAUKUQERQglFClARfMjxGwuOduwdqqJ79yZZIjSSB7NvacN89OmUFu4hoJJAA65VfW1VLV00sUVVC+THutkBKobk+a6xuirGzsb2Rg6Gg/f4qY6Rhp2wU1LHEwDAc6Iv38ABj1QZ4DzKUAg6dLi/uDm7H6FYLdUPfb5Ihs4RslaP5TuPRYqezU1NzTVNlmc7fVI4kDwxtj4KaVsTK2J1ujJ07GMkhhHaM9nwQWsR59yotJy0NdJ5Zyfur0Kls8Dm1ZccgRQtYAe/J+wVy+RkbdT3Bo7ycIMVRjXFn977KqhdyJngn3Hg+uFt1FwgJaYyZNBydI+6rHVcdTXyxsLec3S50erJDSNifVBt1jwWeyQR7TgfgAti3yNY06iAC0Hfw2KrAx0oeGbuLWNA9Svo7xNJPuu/wCUF7DURTEhjskdQsq5m2c90jpWSSknYDbBPbt3LpGZ0jV1xug+kREBERAREQEREBERAREQR0UooQYawAxAE4y4Kor6V01SHsfpxEZJMDrpOWj5qzuRc2m1MaXFpzgBah3oppGAkuha3x7c/VBgcX1VTy4NOJWtkJP6RhcJfL5xRRXCcR2dzYWvLWPLXv1gHAOxxuvRLNA0R80HJdHGweAaMfXKl9lgLi5jnNJOc+KDx6u4r4hpw11XSNh150mWncM/NaEfGd6jcXxVzInd7I27eWy9kraJ8BAdI6Rj+w75+BBVbU2+jxrFO3U0dNLRn5BB5hbeIuIZ7xBLHX1b5JJWNcG50uGQNwNl7WLWSS6WTJ3/AIj8ylntsdMxk2jS9zdm/ugqzf7h8kHg8vHd9iqJhHVM0h5DdULCRg+WF8U/G94huM1c51PLPMxjHl0WBhucYx06rnp8ColxnHMd9V8YycDqdtkHtduv0jbfZKuaCMTXOdrCzJw0EHcfL1Vu5rozNGOrdxncbFcffXCiuvBtvH+i5ryM9wA/qux54nrHP0lgdtg+IQWNupxFECBjI2Hgt1YaZ2uGNx643WZAREQEREBERAREQEREBERAREQQQHAgjIPVYxTsbGWN2B38llRBjghbBGGM6D1WREQa9XStqQwPc5ug5GlalJA1tRp94NLjn0Vk4gNJPZutKgGXOeR2D13QboUP9x3kpUoPzFVMfHUyCRrmHWfeBHb4raslMK280FPvplnY047sr2XifhepvHE9ouEf4c0tIfzmSdXDVnpjBVjVcPWiGeGqht1NHUtkGiRkYaR8kHA8SVPO/tRtUQI0wPhZ8yT916NdIhG6KRjQNyDgYXJ2W2QVfEV4uddQnnx1Y/CySNcPZaBu3v6dV2tybqpCf3SCg+qF2YyB2Hb47rZWhbX5yOmW5+Wy3wglERAREQEREBERAREQEREBERAREQEREGGqdpp5D4YWOhbiInvcceQ2U1ztMbfFwX3St008ffjPzQZkREBaNxdh0YH6Q53pj7raqJeTE6TSXY7AqSS4ySRzTzwti5YDWtD9Wd+ucIMjj/i343DW438BhWVVgUUgPTQQqGKfls50jgwvOrc4w0HcrerrrTTUjfw80cusjOh2cDxQZLb77fHUrQdFV2t2mQRnqG+qtAglERAREQEREBERAREQEREBERBBRfMocYnBhw8g4PiuWqKG6QzOljrqtjz2u9pv3CDrEXKMu97pj+ZHT1bR1LfZPotWv4uuLCRHQiAd7gXn0wg6yvYXwZaCS05wO0dq1KW7U0UbYqqZkEjRj8w6Q7HaFxP983W5Oc38c4Y95rXCMAen1WBkFKx+qeobI/t5YMhPx6eqDuZ+J7XFs2czO7oWl3r0WlJxRNJtSW95HY6Z4aPkMqjp2uf+y0T3D96Z4aPkM/VWEFvr5hh1THB3iniyfmclBsfjrtUBzpJI4ARhvLHu+O/VY3yQ01ua6tndMySbOsjUXnsxjyWo7hyWWpxVVEkzSf15Jx5dF0LLOyRkTXudHFEMMjaAMBBTy3ASMaKSifM8jd7n6WjzyM/JLXbaiWcyz6C8nOlg9kLpIrbTRf6eo97jlbLWtYMNAA7gEFDNaavUHMnmY4b5ikxv5LHrvNN/9QeB0E8P3GF0iIKe33GtkextVDBh5wHRPJ9CFbqAxoOQ0A+S+kBERAREQEREBERAREQQUUogIiIMUtPFL/mRtd4kbrVltUD/AHS5vnuPVb6IOerOGoZwcxRP8cYKqZ+F+VJqgfNARsP1BduiDkbZHW028ppJ4wcBzmHV6HC6mnOqFp0BuR0wvrlR6tWhue/C+0BERAREQFBRSghSiICIiAiIgIiIP//Z', mainMuscle: 'Latissimus' },
@@ -1641,7 +1879,7 @@ const DEFAULT_PLAN = {
     { id: 'e16', name: 'Brustpresse',              sets: 3, repsMin: 8, repsMax: 12, weight: 0, category: 'oberkoerper', muscleGroup: 'Brust',     muscles: 'Brustmuskulatur (Pectoralis major), Trizeps unterstützend', type: 'reps', bodyPart: 'push', imageData: 'data:image/jpeg;base64,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', mainMuscle: 'Brustmuskulatur' },
     { id: 'e17', name: 'Rudermaschine',            sets: 3, repsMin: 8, repsMax: 12, weight: 0, category: 'oberkoerper', muscleGroup: 'Rücken',    muscles: 'Rücken (Latissimus, Rhomboiden), Bizeps unterstützend', type: 'reps', bodyPart: 'pull', imageData: 'data:image/jpeg;base64,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', mainMuscle: 'Rückenmuskulatur' },
     { id: 'e18', name: 'Schulterpresse',           sets: 3, repsMin: 8, repsMax: 12, weight: 0, category: 'oberkoerper', muscleGroup: 'Schultern', muscles: 'Schultermuskulatur (Deltamuskel vorne/seitlich), Trizeps unterstützend', type: 'reps', bodyPart: 'push', imageData: 'data:image/jpeg;base64,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p3SPw5TdFRMjA23V0mhTW4kAkKRhog3qUhHCB1LOIx2INJkGFkbHhbWgJoCDCBhehZdATQg+Avpe6V7hB4F7hegIgL1EQEREBERAXh2C9WldqaWronxQuDXEjn1jsXKNK43drQ6Kldqk5F45N7u0qpV8sjyYadrpJD1N5lTcFjr35ZI5sIzu8nV8AOfeVN26101vj0xt1PPnSO85xUpnWr3SnZmekDw7Q1lFSyCVgYZHA6Qc4wFIvpJZebsKY6Mdi+hGFWTidvUKyztO7tz619OtYA8loCmsAL4eQ1pJIAHMldFRu1MYZYYs5JBefAL4oIeknfnqZ+K3K6UVFU+YebgNb3BaltnLK9zSMte0juXn73a3OZSVNBh2VKwswAsFO0EbBb0bV6EX2wLIvlowvpAREQEREBERAREQEREBERAREQEwiIPnSmlfSIPAF6iIBVcvVzYZega46G5L8er/ADt3qxrWloKSVxc+niJPM6eazqWzkazeVVulbITHHlzzsGgc98eKm7bZxBFrmaDM7d3q9SkYaWCA5ihjYe1rQFmWceP8+3da6wshDOQWUDC9RUYEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERB//2Q==', mainMuscle: 'Schultermuskulatur' },
-    { id: 'e19', name: 'Seitheben',                sets: 3, repsMin: 12, repsMax: 15, weight: 0, category: 'oberkoerper', muscleGroup: 'Schultern', muscles: 'Schultermuskulatur (seitlicher Deltamuskel)', type: 'reps', bodyPart: 'push', mainMuscle: 'Schultermuskulatur' },
+    { id: 'e19', name: 'Seitheben',                sets: 3, repsMin: 12, repsMax: 15, weight: 0, category: 'oberkoerper', muscleGroup: 'Schultern', muscles: 'Schultermuskulatur (seitlicher Deltamuskel)', type: 'reps', bodyPart: 'push', imageData: 'data:image/jpeg;base64,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', mainMuscle: 'Schultermuskulatur' },
     { id: 'e21', name: 'Laufband', sets: 3, secondsMin: 300, secondsMax: 600, weight: 0, category: 'kardio', muscleGroup: 'Kardio', muscles: 'Herz-Kreislauf-System, Beinmuskulatur', type: 'time', cardioMachine: 'laufband', mainMuscle: 'Ausdauer' },
     { id: 'e22', name: 'Stepper', sets: 3, secondsMin: 300, secondsMax: 600, weight: 0, category: 'kardio', muscleGroup: 'Kardio', muscles: 'Herz-Kreislauf-System, Beinmuskulatur', type: 'time', cardioMachine: 'stepper', mainMuscle: 'Ausdauer' },
     { id: 'e23', name: 'Fahrrad', sets: 3, secondsMin: 300, secondsMax: 600, weight: 0, category: 'kardio', muscleGroup: 'Kardio', muscles: 'Herz-Kreislauf-System, Beinmuskulatur', type: 'time', cardioMachine: 'fahrrad', mainMuscle: 'Ausdauer' },
@@ -1988,6 +2226,19 @@ async function init(){
       planChanged = true;
     }
     plan._fixAbdAddImages = true;
+    planChanged = true;
+  }
+  if (!plan._addSeithebenImage){
+    // "Seitheben" (e19) hatte ursprünglich noch gar kein Bild hinterlegt — trägt es hier
+    // einmalig nach, aber nur, falls bislang wirklich keines gesetzt wurde (ein zwischenzeitlich
+    // selbst hochgeladenes Bild bleibt unangetastet).
+    const exE19 = plan.exercises.find(e => e.id === 'e19');
+    const defE19 = DEFAULT_PLAN.exercises.find(e => e.id === 'e19');
+    if (exE19 && !exE19.imageData && defE19 && defE19.imageData){
+      exE19.imageData = defE19.imageData;
+      planChanged = true;
+    }
+    plan._addSeithebenImage = true;
     planChanged = true;
   }
   if (planChanged) await saveJSON('plan', plan);
@@ -6552,7 +6803,7 @@ function openExerciseImagePopup(ex){
         ${ex.imageData
           ? `<img class="exercise-image-popup-img" src="${ex.imageData}" alt="">`
           : `<div class="exercise-image-popup-placeholder">${initials(ex.name)}</div>`}
-        <div class="exercise-image-popup-info">Infos zur Übung folgen hier.</div>
+        <div class="exercise-image-popup-info">${exerciseInfoHTML(ex)}</div>
       </div>
     </div>
   `;
