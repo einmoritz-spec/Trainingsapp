@@ -1793,8 +1793,8 @@ html[data-theme="dark"] .active-back-btn img{ filter:invert(1); }
 
 /* Spiegelbildliches Zahnrad (siehe openTrainingToolsPrompt()) — bewusst genauso dezent/
    unauffällig wie der Zurück-Pfeil (gleiche Größe, gleiche geringe Deckkraft), damit es sich
-   nicht als "wichtiger" Button aufdrängt. Nur sichtbar, wenn plan.trainingToolsEnabled nicht
-   explizit auf false steht (siehe Einstellungen → Training → "Trainings-Werkzeuge"). */
+   nicht als "wichtiger" Button aufdrängt. Nur sichtbar, wenn plan.trainingToolsEnabled
+   explizit auf true steht (Standard: aus, siehe Einstellungen → Training → "Trainingstools"). */
 .active-tools-btn{
   width:30px; height:30px; border-radius:50%;
   background:none; border:none; display:flex; align-items:center; justify-content:center;
@@ -1803,7 +1803,7 @@ html[data-theme="dark"] .active-back-btn img{ filter:invert(1); }
 .active-tools-btn:active{ opacity:0.6; }
 
 
-/* ---------- Trainings-Werkzeuge-Popup (Warm-up/Standard-Pausetimer/Plattenrechner) ---------- */
+/* ---------- Trainingstools-Popup (Warm-up/Standard-Pausetimer/Plattenrechner) ---------- */
 .tools-section{ padding:14px 16px; text-align:left; border-bottom:1px solid var(--border); }
 .tools-section:last-child{ border-bottom:none; }
 .tools-section-title{ font-size:13px; font-weight:600; margin-bottom:8px; }
@@ -3000,10 +3000,10 @@ function calcPlatesPerSide(totalWeight){
   return { plates, remainder: 0 };
 }
 
-// Popup "Trainings-Werkzeuge" (Zahnrad oben rechts im laufenden Training, siehe
+// Popup "Trainingstools" (Zahnrad oben rechts im laufenden Training, siehe
 // renderActive()) — bündelt drei kleine, voneinander unabhängige Hilfsmittel:
 // Warm-up-Satz, Standard-Pausetimer, Plattenrechner. Über Einstellungen → Training →
-// "Trainings-Werkzeuge" komplett ausblendbar (dann erscheint auch das Zahnrad nicht mehr).
+// "Trainingstools" komplett ausblendbar (dann erscheint auch das Zahnrad nicht mehr).
 function openTrainingToolsPrompt(entry, planEx){
   const existing = document.getElementById('trainingToolsOverlay');
   if (existing) existing.remove();
@@ -3032,7 +3032,7 @@ function openTrainingToolsPrompt(entry, planEx){
   overlay.innerHTML = `
     <div class="add-exercise-modal" style="max-height:none;">
       <div class="add-exercise-modal-header">
-        <div class="add-exercise-modal-title">Trainings-Werkzeuge</div>
+        <div class="add-exercise-modal-title">Trainingstools</div>
         <button class="add-exercise-modal-close" id="toolsClose" aria-label="Schließen">✕</button>
       </div>
       <div class="new-exercise-modal-body" style="padding:0;">
@@ -9801,8 +9801,8 @@ function renderSettings(){
     </div>
 
     <div class="muscle-group-header settings-static-row" style="margin-top:10px;">
-      <span class="mg-name">Trainings-Werkzeuge</span>
-      <button class="toggle-switch ${plan.trainingToolsEnabled !== false ? 'on' : ''}" id="trainingToolsToggle" type="button" role="switch" aria-checked="${plan.trainingToolsEnabled !== false}" aria-label="Trainings-Werkzeuge im Training anzeigen">
+      <span class="mg-name">Trainingstools</span>
+      <button class="toggle-switch ${plan.trainingToolsEnabled === true ? 'on' : ''}" id="trainingToolsToggle" type="button" role="switch" aria-checked="${plan.trainingToolsEnabled === true}" aria-label="Trainingstools im Training anzeigen">
         <span class="toggle-knob"></span>
       </button>
     </div>
@@ -9903,10 +9903,10 @@ function renderSettings(){
 
   const trainingToolsToggleEl = document.getElementById('trainingToolsToggle');
   if (trainingToolsToggleEl) trainingToolsToggleEl.onclick = async () => {
-    const willBeOn = plan.trainingToolsEnabled === false;
+    const willBeOn = plan.trainingToolsEnabled !== true;
     plan.trainingToolsEnabled = willBeOn;
     if (!willBeOn){
-      // Beim Ausblenden der Trainings-Werkzeuge auch alle darüber eingestellten,
+      // Beim Ausblenden der Trainingstools auch alle darüber eingestellten,
       // sonst unsichtbar im Hintergrund weiterlaufenden Effekte zurücksetzen — allen
       // voran den Standard-Pausetimer (plan.defaultRestSeconds), der sonst weiterhin
       // nach jedem abgehakten Satz automatisch eine Pause starten würde, obwohl das
@@ -11478,8 +11478,8 @@ function renderActive(){
       <button class="active-back-btn" id="btnActiveBack" type="button" aria-label="Zur Startseite (Training läuft weiter)">
         <img src="${ICON_CHEVRON_RIGHT}" alt="">
       </button>
-      ${plan.trainingToolsEnabled !== false ? `
-      <button class="active-tools-btn" id="btnActiveTools" type="button" aria-label="Trainings-Werkzeuge">⚙</button>
+      ${plan.trainingToolsEnabled === true ? `
+      <button class="active-tools-btn" id="btnActiveTools" type="button" aria-label="Trainingstools">⚙</button>
       ` : `<span></span>`}
     </div>
     <div class="time-box ${restState ? 'resting' : ''}" id="plateEl" style="margin-top:18px;">
@@ -11708,11 +11708,11 @@ function renderActive(){
         if (!wasDone){
           afterSetChecked(entry, ei);
           // Standard-Pausetimer (siehe openTrainingToolsPrompt(), Einstellungen →
-          // Trainings-Werkzeuge → "Standard-Pausetimer"): startet automatisch eine Pause
+          // Trainingstools → "Standard-Pausetimer"): startet automatisch eine Pause
           // in der hinterlegten Länge, sobald ein Satz abgehakt wird — genau wie ein
           // manueller Tap auf einen der 30/60/90s-Buttons, nur ohne dass man selbst
           // draufdrücken muss. Nur wenn eine Dauer hinterlegt ist (Standard: keine).
-          if (plan.trainingToolsEnabled !== false && plan.defaultRestSeconds) startRest(plan.defaultRestSeconds);
+          if (plan.trainingToolsEnabled === true && plan.defaultRestSeconds) startRest(plan.defaultRestSeconds);
         }
         renderActive();
       };
