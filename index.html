@@ -3274,21 +3274,18 @@ function applyDeloadToEntry(entry){
     if (!set._preDeload) set._preDeload = { weight: set.weight, reps: set.reps };
     const origWeight = Number(set._preDeload.weight);
     const origReps = Number(set._preDeload.reps);
-    // "Echtes" Trainingsvolumen: bei assistierten Übungen zählt nicht das eingestellte
-    // Gerätegewicht selbst, sondern (Körpergewicht - Gerätegewicht) — nur so entspricht ein
-    // kleineres Volumen tatsächlich weniger Anstrengung. Ohne bekanntes Körpergewicht bleibt
-    // als Fallback nur die (unpräzise) Annahme, das Gerätegewicht selbst sei die Last.
-    const origEffort = assisted && bw != null ? Math.max(0, bw - origWeight) : origWeight;
-    const targetVolume = origEffort * origReps * 0.5;
     const targetReps = Math.min(12, Math.max(8, Math.round(origReps)));
-    const targetEffort = targetVolume / targetReps;
     let newWeight;
-    if (assisted && bw != null){
-      // Weniger Anstrengung = MEHR Unterstützung = höheres Gerätegewicht.
-      newWeight = Math.round((bw - targetEffort) / 5) * 5;
-      newWeight = Math.min(newWeight, Math.round(bw / 5) * 5); // nie über das eigene Körpergewicht hinaus
+    if (assisted){
+      // Unterstützte Übungen: weniger Anstrengung = MEHR Unterstützung = höheres
+      // Gerätegewicht. Direkt am Gewicht selbst gerechnet (NICHT über Körpergewicht minus
+      // Gewicht), damit das auch ohne hinterlegtes Körpergewicht korrekt funktioniert:
+      // +40 %, auf 5kg-Schritte gerundet (z. B. 20kg → 28 → 30kg).
+      newWeight = Math.round((origWeight * 1.4) / 5) * 5;
+      if (bw != null) newWeight = Math.min(newWeight, Math.round(bw / 5) * 5); // nie über das eigene Körpergewicht hinaus, falls bekannt
     } else {
-      newWeight = Math.round(targetEffort / 5) * 5;
+      const targetVolume = origWeight * origReps * 0.5;
+      newWeight = Math.round((targetVolume / targetReps) / 5) * 5;
       if (newWeight <= 0) newWeight = 5;
     }
     set.weight = newWeight;
@@ -3336,14 +3333,16 @@ function computeWarmupWeight(entry, planEx){
   if (lastWeight == null || lastWeight <= 0) return null; // kein bekanntes Gewicht -> Feld soll leer bleiben statt 0
   // Bei unterstützten Übungen (z. B. Klimmzugmaschine) bedeutet ein leichterer Warm-up-Satz
   // MEHR Unterstützung, also ein HÖHERES Gerätegewicht — genau umgekehrt zu normalen
-  // Übungen (siehe applyDeloadToEntry() für dieselbe Logik beim Deload-Schalter). Die
-  // Reduktion wird daher auf die tatsächliche Anstrengung (Körpergewicht - Gerätegewicht)
-  // angewendet und danach zurück in ein Gerätegewicht umgerechnet.
-  if (planEx && planEx.assisted && plan.bodyWeight != null){
-    const bw = plan.bodyWeight;
-    const origEffort = Math.max(0, bw - lastWeight);
-    const warmupEffort = reduceEffortForWarmup(origEffort);
-    return Math.min(Math.round(bw / 5) * 5, Math.round((bw - warmupEffort) / 5) * 5);
+  // Übungen (siehe applyDeloadToEntry() für dieselbe Logik beim Deload-Schalter). Direkt am
+  // Gewicht selbst gerechnet (NICHT über Körpergewicht minus Gewicht), damit das auch ohne
+  // hinterlegtes Körpergewicht korrekt funktioniert: derselbe Betrag, um den eine normale
+  // Übung reduziert würde (reduceEffortForWarmup()), wird hier stattdessen AUFGESCHLAGEN.
+  if (planEx && planEx.assisted){
+    const reducedAsIfNormal = reduceEffortForWarmup(lastWeight);
+    const delta = lastWeight - reducedAsIfNormal;
+    let newWeight = Math.round((lastWeight + delta) / 5) * 5;
+    if (plan.bodyWeight != null) newWeight = Math.min(newWeight, Math.round(plan.bodyWeight / 5) * 5); // nie über das eigene Körpergewicht hinaus, falls bekannt
+    return newWeight;
   }
   const reduced = reduceEffortForWarmup(lastWeight);
   return reduced > 0 ? reduced : null;
