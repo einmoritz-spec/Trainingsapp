@@ -1748,6 +1748,47 @@ table.detail-table tbody tr:first-child td{ border-top:none; }
 .bottom-bar-inner{ max-width: 640px; margin:0 auto; display:flex; gap:10px; }
 .bottom-bar-inner .btn{ flex:1; }
 
+/* Dauerhaftes Mini-Banner am unteren Bildschirmrand, solange ein Training läuft, man sich
+   aber gerade NICHT auf der aktiven Trainingsseite selbst befindet — siehe updateMiniPlayer().
+   Tap irgendwo auf dem Banner (außer dem roten X) öffnet die Trainingsseite wieder, das X
+   bricht das Training ab (mit Warnung, gleiches Popup wie zuvor an der Zurück-Taste). */
+.mini-player{
+  position:fixed; left:0; right:0; bottom:0; z-index:40;
+  display:flex; align-items:center; gap:12px;
+  padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+  background: var(--surface);
+  border-top:1px solid var(--border);
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.12);
+  max-width:640px; margin:0 auto;
+}
+.mini-player-open{ display:flex; align-items:center; gap:12px; flex:1; min-width:0; background:none; border:none; padding:0; text-align:left; }
+.mini-player-arrow{ width:22px; height:22px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+.mini-player-arrow img{ width:14px; height:14px; display:block; opacity:0.55; transform:rotate(-90deg); }
+html[data-theme="dark"] .mini-player-arrow img{ filter:invert(1); }
+.mini-player-mid{ min-width:0; flex:1; }
+.mini-player-time{ font-size:15px; font-weight:700; color:var(--text); font-variant-numeric:tabular-nums; }
+.mini-player-exercise{ font-size:12.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
+.mini-player-cancel{
+  flex-shrink:0; width:32px; height:32px; border-radius:50%;
+  background:none; border:1px solid var(--accent-2); color:var(--accent-2);
+  font-size:15px; line-height:1; display:flex; align-items:center; justify-content:center;
+}
+.mini-player-cancel:active{ background: var(--accent-2); color:#fff; }
+
+/* Kleiner, unauffälliger Zurück-Button oben links auf der aktiven Trainingsseite (führt zur
+   Startseite, OHNE das Training zu beenden — läuft im Hintergrund weiter, siehe Mini-Banner).
+   Bewusst position:fixed statt im normalen Layoutfluss, damit kein einziges anderes Element
+   (Timer-Box, Kachel-Leiste etc.) dadurch verrutscht. */
+.active-back-btn{
+  position:fixed; top: calc(env(safe-area-inset-top) + 14px); left:14px; z-index:30;
+  width:30px; height:30px; border-radius:50%;
+  background:none; border:none; display:flex; align-items:center; justify-content:center;
+  padding:0;
+}
+.active-back-btn img{ width:13px; height:13px; display:block; opacity:0.32; transform:rotate(180deg); }
+html[data-theme="dark"] .active-back-btn img{ filter:invert(1); }
+.active-back-btn:active img{ opacity:0.6; }
+
 /* ---------- Print (PDF export) ---------- */
 @media print{
   @page{ margin: 10mm; }
@@ -1794,6 +1835,17 @@ table.detail-table tbody tr:first-child td{ border-top:none; }
 </head>
 <body>
 <div class="app" id="app"></div>
+<div class="mini-player" id="miniPlayer" style="display:none">
+  <button class="mini-player-open" id="miniPlayerOpenBtn" type="button" aria-label="Training öffnen">
+    <span class="mini-player-arrow" id="miniPlayerArrow"></span>
+    <span class="mini-player-mid">
+      <span class="mini-player-time" id="miniPlayerTime">00:00</span>
+      <span class="mini-player-exercise" id="miniPlayerExercise"></span>
+    </span>
+  </button>
+  <button class="mini-player-cancel" id="miniPlayerCancelBtn" type="button" aria-label="Training abbrechen">✕</button>
+</div>
+
 
 <script>
 /* ---------------------------------------------------
@@ -2783,6 +2835,7 @@ async function init(){
     const restoredState = history.state;
     if (restoredState && restoredState.view){
       renderViewByState(restoredState);
+      updateMiniPlayer();
     } else {
       replaceView('home');
       renderHome();
@@ -4503,9 +4556,82 @@ function renderMonthReport(year, month){
 function pushView(view, params){
   resetAllAccordions();
   history.pushState({ view, params: params || {} }, '', '');
+  updateMiniPlayer();
 }
 function replaceView(view, params){
   history.replaceState({ view, params: params || {} }, '', '');
+  updateMiniPlayer();
+}
+
+// Dauerhaftes Mini-Banner (#miniPlayer, siehe CSS/Markup): sichtbar, sobald ein Training
+// läuft (active gesetzt) UND man sich NICHT auf der aktiven Trainingsseite selbst befindet.
+// Wird nach jeder Navigation (pushView/replaceView, s.o.) sowie jede Sekunde vom laufenden
+// Timer (updateTimerDisplay) aktualisiert, damit Zeit/Übungsname im Banner immer aktuell
+// sind, auch während man sich anderswo in der App bewegt (Übungen bearbeiten, Einstellungen
+// ändern etc.) — die eigentliche Trainings-Session (active/timerHandle) läuft davon völlig
+// unabhängig einfach im Hintergrund weiter.
+let miniPlayerWired = false;
+function wireMiniPlayerOnce(){
+  if (miniPlayerWired) return;
+  miniPlayerWired = true;
+  const arrowEl = document.getElementById('miniPlayerArrow');
+  if (arrowEl) arrowEl.innerHTML = `<img src="${ICON_CHEVRON_RIGHT}" alt="">`;
+  const openBtn = document.getElementById('miniPlayerOpenBtn');
+  if (openBtn) openBtn.onclick = () => {
+    if (!active) return;
+    pushView('active');
+    renderActive();
+  };
+  const cancelBtn = document.getElementById('miniPlayerCancelBtn');
+  if (cancelBtn) cancelBtn.onclick = () => cancelActiveSession();
+}
+function updateMiniPlayer(){
+  const el = document.getElementById('miniPlayer');
+  if (!el) return;
+  wireMiniPlayerOnce();
+  const currentView = (history.state && history.state.view) || 'home';
+  if (!active || currentView === 'active'){
+    el.style.display = 'none';
+    return;
+  }
+  el.style.display = 'flex';
+  const now = active.pausedAt || Date.now();
+  const sec = Math.floor((now - active.startedAt)/1000);
+  const timeEl = document.getElementById('miniPlayerTime');
+  if (timeEl) timeEl.textContent = fmtDuration(sec);
+  const entry = active.entries[active.currentIndex];
+  const exEl = document.getElementById('miniPlayerExercise');
+  if (exEl) exEl.textContent = entry ? entry.name : '';
+}
+
+// Bricht das laufende Training komplett ab (nicht "beenden"/speichern, sondern verwerfen) —
+// nach Bestätigung erreichbar sowohl über das rote X im Mini-Banner (siehe oben) als auch
+// früher über die Zurück-Taste; seit Einführung des Mini-Banners verlässt die Zurück-Taste
+// das Training nur noch, ohne es abzubrechen (siehe popstate-Handler), daher ist dies jetzt
+// der einzige Weg, eine Einheit wirklich zu verwerfen. Gleiches Undo-Toast-Muster wie überall
+// sonst in der App (z. B. Satz entfernen).
+function cancelActiveSession(){
+  if (!active) return;
+  if (!confirm('Training wirklich abbrechen? Die Einheit wird nicht in deinem Verlauf gespeichert.')) return;
+  clearInterval(timerHandle);
+  clearInterval(restInterval);
+  restState = null;
+  const discarded = active;
+  const wasOnActiveView = (history.state && history.state.view) === 'active';
+  active = null;
+  persistActiveSession();
+  if (wasOnActiveView){
+    replaceView('home');
+    renderHome();
+  } else {
+    updateMiniPlayer();
+  }
+  showUndoToast('Training verworfen.', () => {
+    active = discarded;
+    persistActiveSession();
+    timerHandle = setInterval(updateTimerDisplay, 1000);
+    updateMiniPlayer();
+  });
 }
 function goHome(push){
   if (push !== false) pushView('home');
@@ -4689,30 +4815,8 @@ window.addEventListener('popstate', (event) => {
   }
   resetAllAccordions();
   const state = event.state || { view: 'home', params: {} };
-  if (active && state.view !== 'active'){
-    if (confirm('Training wirklich verlassen? Die Einheit wird nicht in deinem Verlauf gespeichert.')){
-      clearInterval(timerHandle);
-      clearInterval(restInterval);
-      restState = null;
-      const discarded = active;
-      active = null;
-      persistActiveSession();
-      replaceView('home');
-      renderHome();
-      showUndoToast('Training verworfen.', () => {
-        active = discarded;
-        persistActiveSession();
-        pushView('active');
-        timerHandle = setInterval(updateTimerDisplay, 1000);
-        renderActive();
-      });
-    } else {
-      pushView('active');
-      renderActive();
-    }
-    return;
-  }
   renderViewByState(state);
+  updateMiniPlayer();
 });
 
 /* ---------------------------------------------------
@@ -10197,10 +10301,16 @@ function repeatSession(session){
 
 function updateTimerDisplay(){
   const el = document.getElementById('plateTime');
-  if (!el || !active) return;
-  const now = active.pausedAt || Date.now();
-  const sec = Math.floor((now - active.startedAt)/1000);
-  el.textContent = fmtDuration(sec);
+  if (active){
+    const now = active.pausedAt || Date.now();
+    const sec = Math.floor((now - active.startedAt)/1000);
+    if (el) el.textContent = fmtDuration(sec);
+    const miniTimeEl = document.getElementById('miniPlayerTime');
+    const miniPlayerEl = document.getElementById('miniPlayer');
+    if (miniTimeEl && miniPlayerEl && miniPlayerEl.style.display !== 'none'){
+      miniTimeEl.textContent = fmtDuration(sec);
+    }
+  }
 }
 
 // Pausiert bzw. setzt die normal weiterlaufende Trainingszeit fort — nur relevant, solange
@@ -11063,7 +11173,7 @@ function renderActive(){
           ${sets.map((r,i) => `
             <div class="reference-row">
               <span>#${i+1}</span>
-              <span>${entry.type === 'time' ? fmtSec(r.seconds) : `${r.reps ?? '–'} × ${r.weight ?? '–'} kg`}</span>
+              <span>${entry.type === 'time' ? fmtSec(r.seconds) : `${r.weight ?? '–'}kg × ${r.reps ?? '–'}`}</span>
             </div>
           `).join('')}
         </div>
@@ -11137,6 +11247,9 @@ function renderActive(){
   ` : '';
 
   app.innerHTML = `
+    <button class="active-back-btn" id="btnActiveBack" type="button" aria-label="Zur Startseite (Training läuft weiter)">
+      <img src="${ICON_CHEVRON_RIGHT}" alt="">
+    </button>
     <div class="time-box ${restState ? 'resting' : ''}" id="plateEl" style="margin-top:18px;">
       <div class="time-box-time-row" id="plateTimeRow">
         <div class="time-box-time ${active.pausedAt ? 'time-paused' : ''}" id="plateTime">00:00</div>
@@ -11168,6 +11281,11 @@ function renderActive(){
   `;
 
   updateTimerDisplay();
+  document.getElementById('btnActiveBack').onclick = () => {
+    // Führt zur Startseite, OHNE das Training zu beenden/verwerfen — läuft im Hintergrund
+    // einfach weiter (gleiches Verhalten wie die Zurück-Taste, nur als expliziter Button).
+    goHome();
+  };
   if (restState){
     // Passiert dem Ring UND dem Pause-Label/der Restzeit-Anzeige (#plateRest) — beide
     // erhalten ihre "visible"-Klasse normalerweise nur einmalig in startRest() und stehen
@@ -11276,9 +11394,12 @@ function renderActive(){
         input.onchange = () => {
           const val = input.value === '' ? null : Number(input.value);
           const field = input.dataset.field;
-          entry.sets[si][field] = val;
-          entry.sets[si].autoFilled = false;
+          // Trägt den Wert direkt beim Eintragen (kein Abhaken nötig) in diesen Satz ein
+          // und schreibt ihn wie beim Abhaken automatisch in alle direkt folgenden, noch
+          // leeren bzw. nur automatisch befüllten Sätze fort (applySetValueAndPropagate).
+          applySetValueAndPropagate(entry, si, { [field]: val });
           persistActiveSession();
+          renderActive();
         };
         if (entry.type !== 'time'){
           input.oninput = () => {
@@ -11301,9 +11422,11 @@ function renderActive(){
         const commit = () => {
           const min = minEl.value === '' ? 0 : Number(minEl.value);
           const sec = secEl.value === '' ? 0 : Number(secEl.value);
-          entry.sets[si].seconds = (minEl.value === '' && secEl.value === '') ? null : (min * 60 + sec);
-          entry.sets[si].autoFilled = false;
+          const seconds = (minEl.value === '' && secEl.value === '') ? null : (min * 60 + sec);
+          // Wie bei Gewicht/Wdh: Dauer direkt beim Eintragen in Folge-Sätze übernehmen.
+          applySetValueAndPropagate(entry, si, { seconds });
           persistActiveSession();
+          renderActive();
         };
         [minEl, secEl].forEach(el => {
           el.onkeydown = (ev) => { if (ev.key === 'Enter'){ ev.preventDefault(); el.blur(); } };
@@ -11326,10 +11449,9 @@ function renderActive(){
         if (timerBtn && secondsInput){
           timerBtn.onclick = () => {
             openPlankTimerOverlay((sec) => {
-              secondsInput.value = sec;
-              entry.sets[si].seconds = sec;
-              entry.sets[si].autoFilled = false;
+              applySetValueAndPropagate(entry, si, { seconds: sec });
               persistActiveSession();
+              renderActive();
             });
           };
         }
