@@ -186,6 +186,13 @@ html[data-theme="light"] #btnSummaryShare{ color:#000; border-color:#000; }
 .history-row:active{ background: var(--surface-2); }
 .history-date{ font-weight:600; }
 .history-meta{ font-family:'JetBrains Mono', monospace; font-size:12px; color: var(--muted); margin-top:2px; }
+/* Dezenter grauer Hinweis-Tag bei Einheiten, die über die "Frei"-Kachel liefen (siehe
+   historyRowHTML()) — bewusst unauffällig (kein Rahmen/Hintergrund, nur leicht abgesetzte
+   Schrift), da es eine Zusatz-Info ist, kein Fehlerzustand. */
+.history-free-tag{
+  font-family:'JetBrains Mono', monospace; font-size:11px; color: var(--muted); opacity:0.55;
+  letter-spacing:0.3px; flex-shrink:0; margin:0 10px;
+}
 .history-empty{
   padding: 24px 16px; color: var(--muted); text-align:center; font-size:14px;
   background: var(--surface); border-radius: var(--radius); border:1px solid var(--border);
@@ -205,43 +212,46 @@ html[data-theme="light"] #btnSummaryShare{ color:#000; border-color:#000; }
 /* ---------- Nav row / stat cards ---------- */
 /* Horizontal scrollbarer Wochenstreifen: scroll-snap-type sorgt dafür, dass beim Loslassen
    immer eine ganze Woche exakt im Rahmen einrastet (kein "halb sichtbarer" Wochenwechsel);
-   scroll-snap-stop:always (auf .week-strip, dem jeweiligen Slide) verhindert zusätzlich, dass
-   ein schneller Wisch mit Schwung mehrere Wochen auf einmal überspringt — OHNE das wirkte die
-   Liste trotz scroll-snap-type gefühlt "endlos", weil man je nach Wisch-Stärke mal 1, mal 3
-   Wochen weiterrutschte. negatives Margin + gleich großes Padding auf .week-strip-scroll
-   kompensieren NUR den linken .app-Seitenrand (Bleed), damit die aktuelle Woche optisch genauso
-   randbündig sitzt wie zuvor der einzelne Button. Scrollbar selbst bewusst unsichtbar.
-   .week-strip-wrap ist eine echte Flex-Zeile aus Scroll-Container + Pfeil-Button als EIGENE
-   Spalte daneben (keine Overlay-Lösung mehr) — der Pfeil überlagert dadurch nie den letzten
-   Wochentag (So) und es kann nichts von der nächsten Woche neben ihm durchscheinen, weil der
-   Scroll-Container jetzt sein eigenes, sauber begrenztes overflow-x:auto-Feld hat, das exakt
-   an der Pfeil-Spalte endet statt bis zum Bildschirmrand zu reichen.
+   scroll-snap-stop:always (auf .week-strip-slide, dem jeweiligen Slide) verhindert zusätzlich,
+   dass ein schneller Wisch mit Schwung mehrere Wochen auf einmal überspringt.
+   WICHTIG: der Pfeil-Hinweis wird NICHT mehr dynamisch per Scroll-Listener ein-/ausgeblendet
+   (frühere Versionen dieser Lösung: erst Overlay, dann eine eigene Flex-Spalte, deren Breite
+   sich je nach Scroll-Position änderte) — jede Art, die Breite/Sichtbarkeit während oder nach
+   dem Scrollen dynamisch zu verändern, veränderte den Scroll-Container und sorgte für sichtbares
+   Springen bzw. ein verzögertes "Reinschieben" des Pfeils. Stattdessen ist der Pfeil jetzt fest
+   Teil der Slide-Struktur JEDER vergangenen Woche (siehe weekStripHTML(): pro Woche ein
+   .week-strip-slide mit .week-strip [7 Tage] + optionalem .week-strip-arrow-inline-Button, nur
+   bei der aktuellen [letzten] Woche fehlt Letzterer) — dadurch ändert sich am Scroll-Container
+   selbst während des Scrollens NICHTS mehr, jede Woche ist von Anfang an exakt so breit wie ihr
+   Slide, der Pfeil ist bei vergangenen Wochen sofort da (kein Nachladen/Einschieben).
+   Kleines vertikales Padding auf .week-strip-scroll verhindert außerdem, dass der Info-Ring um
+   die heutige Zahl (box-shadow) am unteren Rand vom (durch overflow-x:auto implizit auch
+   aktiven) overflow-y abgeschnitten wird.
 */
-.week-strip-wrap{ display:flex; align-items:stretch; margin-bottom:20px; }
+.week-strip-wrap{ margin-bottom:20px; }
 .week-strip-scroll{
   display:flex; overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch;
-  margin-left:-16px; padding-left:16px; scrollbar-width:none; flex:1; min-width:0;
+  scrollbar-width:none; padding:3px 0;
 }
 .week-strip-scroll::-webkit-scrollbar{ display:none; }
-.week-strip{
-  display:flex; justify-content:space-between; gap:4px; width:100%; flex:0 0 100%;
-  scroll-snap-align:start; scroll-snap-stop:always; background:none; border:none; padding:0;
-  font:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent;
+.week-strip-slide{
+  display:flex; align-items:center; gap:6px; width:100%; flex:0 0 100%;
+  scroll-snap-align:start; scroll-snap-stop:always;
 }
-/* Pfeil-Button: eigene, unsichtbare (aber tappbare) Spalte rechts neben dem Scroll-Container —
-   bei der aktuellen Woche komplett eingeklappt (Breite 0, unsichtbar, keine Klicks), sobald man
-   weggescrollt hat blendet sie sich auf reguläre Touch-Target-Größe auf. Tap scrollt animiert
-   zurück zur aktuellen Woche, statt (wie die einzelnen Wochen-Buttons) die Monatsübersicht zu
-   öffnen. */
-.week-strip-arrow-btn{
-  flex:0 0 0; width:0; overflow:hidden; display:flex; align-items:center; justify-content:center;
-  background:none; border:none; padding:0; opacity:0; pointer-events:none;
-  transition:opacity .15s ease, flex-basis .15s ease, width .15s ease;
+.week-strip{
+  display:flex; justify-content:space-between; gap:4px; flex:1; min-width:0;
+  background:none; border:none; padding:0; font:inherit; cursor:pointer;
   -webkit-tap-highlight-color:transparent;
 }
-.week-strip-arrow-btn.visible{ flex:0 0 38px; width:38px; opacity:1; pointer-events:auto; }
-.week-strip-arrow-btn img{ width:14px; height:14px; display:block; opacity:0.32; filter:invert(1); }
-html[data-theme="light"] .week-strip-arrow-btn img{ filter:none; }
+/* Pfeil-Button: fester Bestandteil jeder vergangenen Woche (siehe Kommentar oben), eigener
+   Button neben .week-strip (kein verschachteltes <button> im <button>). Tap scrollt animiert
+   zurück zur aktuellen Woche, statt (wie .week-strip selbst) die Monatsübersicht zu öffnen. */
+.week-strip-arrow-inline{
+  flex:0 0 20px; display:flex; align-items:center; justify-content:center;
+  background:none; border:none; padding:0; -webkit-tap-highlight-color:transparent;
+}
+.week-strip-arrow-inline img{ width:14px; height:14px; display:block; opacity:0.32; filter:invert(1); }
+html[data-theme="light"] .week-strip-arrow-inline img{ filter:none; }
 .month-overview-back-sticky{
   position:sticky; top:0; z-index:20; background:none; border:none; box-shadow:none;
 }
@@ -358,7 +368,7 @@ button.month-overview-day-num{ cursor:pointer; -webkit-tap-highlight-color:trans
   display:flex; align-items:center; justify-content:center;
 }
 #dayTrainingPopupOverlay .day-popup-history-btn img{ width:16px; height:16px; display:block; }
-#dayTrainingPopupOverlay .add-exercise-modal-header-icons{ display:flex; align-items:center; gap:2px; }
+.add-exercise-modal-header-icons{ display:flex; align-items:center; gap:2px; }
 #dayTrainingPopupOverlay .new-exercise-modal-body{ padding:14px 16px 18px; }
 .day-popup-block{ padding:0; }
 .day-popup-tile-name{ font-size:14px; font-weight:600; margin-bottom:12px; text-align:center; }
@@ -970,6 +980,9 @@ html[data-theme="light"] .bodyweight-warning-icon{ filter: none; }
   background:none; border:1px solid var(--border); color: var(--muted);
   border-radius:8px; width:32px; height:32px; font-size:16px;
 }
+/* Stern-Button in einem Popup-Header (z.B. Übungsbild-Popup) etwas kleiner als in der
+   Übungsliste, damit er sich an die Größe des Schließen-Buttons daneben angleicht. */
+.add-exercise-modal-header .exercise-fav-btn{ width:32px; height:32px; }
 .add-exercise-modal-body{ overflow-y:auto; padding:12px 16px 24px; }
 /* ---------- Körpergewicht-Popup: eigene, kompaktere Optik statt der schweren Standard-
    Elemente (großer umrandeter Schließen-Button, überdimensionierter .btn-primary-Speichern-
@@ -1381,6 +1394,12 @@ html[data-theme="light"] .bodyweight-warning-icon{ filter: none; }
    für den (dunklen) Standard-Modus wird es invertiert, analog zum Zurück-Pfeil-Icon. */
 .plan-row-edit-btn img{ filter: invert(1); }
 html[data-theme="light"] .plan-row-edit-btn img{ filter: none; }
+/* Favoriten-Stern (Übungen-Liste + Übungsbild-Popup) — reiner Icon-Button ohne eigenen
+   Hintergrund/Rahmen, Farbe folgt via currentColor exakt der Akzentfarbe (siehe starIconSVG()). */
+.exercise-fav-btn{
+  flex-shrink:0; background:none; border:none; padding:0; color: var(--accent);
+  width:38px; height:38px; display:flex; align-items:center; justify-content:center;
+}
 
 
 /* ---------- Übungen-Bearbeiten-Popup (Detail-Felder einer einzelnen Übung) ---------- */
@@ -1443,11 +1462,15 @@ html[data-theme="light"] .plan-row-edit-btn img{ filter: none; }
    Finger auf einem (meist eingeklappten, also den Großteil des Bildschirms einnehmenden)
    Kopf statt auf einem aufgeklappten Körper aufsetzt. */
 #modeEditRows .muscle-group-header, #freeRows .muscle-group-header{ touch-action: none; }
-/* #exerciseStatsList: pan-y statt none — der Browser übernimmt natives, träges Vertikal-
-   Scrollen der (bis zu 11 Einträge langen) Statistik-Liste von selbst; wireProgressStatsReorder()
-   erkennt trotzdem zuverlässig, wann stattdessen "gehalten" wird, um umzusortieren (siehe
-   Kommentar dort), und ruft dann selbst preventDefault() auf den jeweiligen Move-Events auf. */
-#exerciseStatsList .muscle-group-header{ touch-action: pan-y; }
+/* #exerciseStatsList: früher hier pan-y (natives Scrollen), aber das erlaubt dem Browser, die
+   Seite direkt im Compositor zu scrollen OHNE auf JavaScript zu warten — dadurch konnte er
+   mitten im Long-Press-Drag doch übernehmen (die Seite "sprang" plötzlich weg, teils bis zum
+   Pull-to-refresh am oberen Rand), egal was preventDefault() im JS danach noch versucht. touch-
+   action:none zwingt den Browser, jede Bewegung erst durch JS laufen zu lassen — Zuverlässigkeit
+   des Drags geht hier vor butterweichem nativen Scroll-Momentum (siehe wireProgressStatsReorder(),
+   das dafür wieder manuelles window.scrollBy() während des Wartens auf den Long-Press nutzt,
+   exakt wie wireMuscleGroupReorder() bei #modeEditRows/#freeRows). */
+#exerciseStatsList .muscle-group-header{ touch-action: none; }
 .progress-stat-editbtn{
   display:flex; align-items:center; justify-content:center; margin:14px auto 0;
   background: var(--surface-2); border:1px solid var(--border); color: var(--text);
@@ -1491,10 +1514,10 @@ html[data-theme="light"] .progress-stat-editbtn img{ filter: none; }
    EIN Element, das einfach länger wird — statt wie zwei separate Boxen mit sichtbarer Lücke
    dazwischen. Der Körper übernimmt dafür Rand/Ecken/Hintergrund der Karte (nur oben durch
    eine Trennlinie vom Kopf abgesetzt), der Kopf verliert seinen eigenen Rahmen und wird zur
-   obersten Zeile dieser Karte. Andere Stellen, die .muscle-group-header/-body OHNE die
-   .muscle-group-Karte drumherum nutzen (z. B. die Monats-Zeilen in der Workouts-Übersicht,
-   dort bereits innerhalb einer Jahres-Karte verschachtelt), bleiben davon unberührt, da diese
-   Regeln gezielt nur direkte Kinder von .muscle-group treffen.*/
+   obersten Zeile dieser Karte. Auch die Monats-Zeilen in der Workouts-Übersicht nutzen dieses
+   Muster (dort ggf. zusätzlich innerhalb einer Jahres-Karte verschachtelt) — die einzelnen
+   .history-row-Einträge im Body bekommen dadurch nur noch die eine Trennlinie zum Kopf plus je
+   eine dünne Linie zwischen mehreren Einheiten desselben Monats, keine eigene Umrandung mehr.*/
 .muscle-group{
   border:1px solid var(--border); border-radius: var(--radius);
   background: var(--surface); overflow:hidden;
@@ -1681,14 +1704,22 @@ html[data-theme="light"] .progress-stat-editbtn img{ filter: none; }
 table.detail-table{ width:100%; border-collapse: collapse; margin-top: 4px; }
 table.detail-table th{
   text-align:center; font-size:11px; text-transform:uppercase; letter-spacing:1px; color: var(--muted);
-  padding: 8px 6px; border-bottom:1px solid var(--border); white-space:nowrap;
+  padding: 8px 5px; border-bottom:1px solid var(--border); white-space:nowrap;
 }
 table.detail-table td{
-  padding: 8px 6px; font-family:'JetBrains Mono', monospace; font-size:13px; text-align:center;
+  padding: 8px 5px; font-family:'JetBrains Mono', monospace; font-size:13px; text-align:center;
 }
 table.detail-table th:first-child, table.detail-table td:first-child{ text-align:left; }
 table.detail-table tr.exercise-start td{ border-top:1px solid var(--border); }
 table.detail-table tbody tr:first-child td{ border-top:none; }
+/* Sicherheitsnetz: die Gewicht-Spalte trug bisher "kg" in JEDER Zeile mit (z.B. "102,5 kg"),
+   wodurch die Spalte bei langen Zahlen die Tabelle über den Bildschirmrand hinausschob (siehe
+   Screenshot-Feedback) — die Einheit steht jetzt nur einmal in der Kopfzeile ("Gewicht (kg)"),
+   die Zellen zeigen nur noch die reine Zahl. Zusätzlich die Tabelle in einen horizontal
+   scrollbaren Wrapper gepackt, falls Übungsnamen + Zahlen trotzdem mal nicht auf einen Blick
+   passen (z.B. sehr kleine Bildschirme, viele Nachkommastellen) — dann ist der Rest wenigstens
+   erreichbar statt einfach abgeschnitten zu sein. */
+.detail-table-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
 .detail-actions{ display:flex; gap:8px; margin-top: 22px; justify-content:center; }
 .detail-actions .btn{ flex:0 1 auto; padding:12px 14px; font-size:13.5px; }
 
@@ -2373,16 +2404,57 @@ function currentAccentColor(){
   return allAccentSwatches().find(c => c.id === id) || ACCENT_COLORS[0];
 }
 // Eigene Hintergrundfarbe (Darstellung → Einstellungen), unabhängig von der Akzentfarbe.
-// Nutzt dieselbe Farbpalette + Favoriten wie der Akzentfarben-Picker. plan.bgColorId === 'default'
-// (oder gar nicht gesetzt) bedeutet: kein eigener Hintergrund, es gilt der normale Hell-/
-// Dunkelmodus-Standard aus dem CSS (:root / html[data-theme="light"]) — daher hier null zurück,
-// damit applyTheme() die Inline-Override wieder entfernen kann statt eine Farbe zu erzwingen.
+// Anders als die Akzentfarbe NICHT aus der bunten ACCENT_COLORS-Palette wählbar (knallige
+// Akzenttöne eignen sich schlecht als Fläche für den ganzen Bildschirm) — stattdessen eine
+// kleine, bewusst zurückhaltende Auswahl neutraler Töne, passend zum jeweils aktiven Hell-/
+// Dunkelmodus (siehe bgSwatchesForCurrentMode()), plus die eigenen Favoriten (geteilt mit dem
+// Akzentfarben-Picker, siehe favoriteAccentColors()) und die freie Farbauswahl (HSV-Picker).
+const BG_NEUTRAL_COLORS = {
+  dark: [
+    { id: 'bg-dark-1', name: 'Anthrazit',   hex: '#16181c' },
+    { id: 'bg-dark-2', name: 'Schwarz',     hex: '#1a1a1a' },
+    { id: 'bg-dark-3', name: 'Blaugrau',    hex: '#0F131C' },
+    { id: 'bg-dark-4', name: 'Warmgrau',    hex: '#1a1613' },
+    { id: 'bg-dark-5', name: 'Waldgrün',    hex: '#141a17' },
+    { id: 'bg-dark-6', name: 'Weinrot',     hex: '#1a1416' },
+    { id: 'bg-dark-7', name: 'Violettgrau', hex: '#16141c' },
+  ],
+  light: [
+    { id: 'bg-light-1', name: 'Weiß',        hex: '#ffffff' },
+    { id: 'bg-light-2', name: 'Neutralgrau', hex: '#f2f2f2' },
+    { id: 'bg-light-3', name: 'Warmweiß',    hex: '#f7f3ec' },
+    { id: 'bg-light-4', name: 'Kühlweiß',    hex: '#eef1f4' },
+    { id: 'bg-light-5', name: 'Mintweiß',    hex: '#eef4f0' },
+    { id: 'bg-light-6', name: 'Roséweiß',    hex: '#f7eef0' },
+    { id: 'bg-light-7', name: 'Lavendel',    hex: '#f0eef7' },
+  ],
+};
+// Swatches für das Grid: NUR die 4 zum aktuell aktiven Modus passenden Neutraltöne + Favoriten
+// (wechselt live mit, sobald oben der Hell-/Dunkelmodus umgeschaltet wird).
+function bgSwatchesForCurrentMode(){
+  const neutrals = currentThemeMode() === 'light' ? BG_NEUTRAL_COLORS.light : BG_NEUTRAL_COLORS.dark;
+  const favs = favoriteAccentColors().map(hex => ({ id: `fav-${hex.replace('#','')}`, name: hex.toUpperCase(), hex, isFavorite: true }));
+  return [...neutrals, ...favs];
+}
+// Für das Auflösen einer gespeicherten plan.bgColorId (siehe currentBgColor()) ALLE Neutraltöne
+// beider Modi durchsuchen, nicht nur die des aktuell aktiven — eine z.B. im Dunkelmodus gewählte
+// eigene Hintergrundfarbe soll auch nach einem Wechsel zu Hell weiterhin korrekt aufgelöst
+// werden (bewusste, bereits gewählte Übersteuerung bleibt bestehen, wie bei anderen Overrides
+// in der App üblich) statt auf "nicht gefunden" zu laufen.
+function allBgSwatches(){
+  const favs = favoriteAccentColors().map(hex => ({ id: `fav-${hex.replace('#','')}`, name: hex.toUpperCase(), hex, isFavorite: true }));
+  return [...BG_NEUTRAL_COLORS.dark, ...BG_NEUTRAL_COLORS.light, ...favs];
+}
+// plan.bgColorId === 'default' (oder gar nicht gesetzt) bedeutet: kein eigener Hintergrund, es
+// gilt der normale Hell-/Dunkelmodus-Standard aus dem CSS (:root / html[data-theme="light"]) —
+// daher hier null zurück, damit applyTheme() die Inline-Override wieder entfernen kann statt
+// eine Farbe zu erzwingen.
 function currentBgColor(){
   if (plan && plan.bgColorId === 'custom' && plan.bgCustomHex){
     return { id: 'custom', name: 'Eigene Farbe', hex: plan.bgCustomHex };
   }
   if (plan && plan.bgColorId && plan.bgColorId !== 'default'){
-    return allAccentSwatches().find(c => c.id === plan.bgColorId) || null;
+    return allBgSwatches().find(c => c.id === plan.bgColorId) || null;
   }
   return null;
 }
@@ -2471,6 +2543,32 @@ function contrastTextColor(hex){
   return luminance > currentAccentContrastThreshold() ? '#121316' : '#ffffff';
 }
 
+// Leitet aus einer frei gewählten Hintergrundfarbe eine dazu passende Karten-/Rahmenfarben-
+// Palette ab (Farbton + gedeckelte Sättigung der Basis beibehalten, nur die Helligkeit stufen-
+// weise verschieben) — dieselben Helligkeits-Abstände wie zwischen den fest verdrahteten
+// :root/html[data-theme="light"]-Werten (bg→surface→surface-2→border), nur eben ausgehend von
+// der gewählten Basisfarbe statt von #121316/#f5f4f1. Dadurch wirken bei einer eigenen
+// Hintergrundfarbe auch Karten, Buttons und Trennlinien wie aus einem Guss statt wie zufällig
+// über die Standardfarbe gelegt. Sättigung ist gedeckelt (max. 22%), damit die abgeleiteten
+// Flächen dezent bleiben und nicht bunt wirken — NUR die Akzentfarbe bleibt komplett unangetastet
+// (siehe applyTheme(), --text/--muted bleiben ebenfalls unverändert für verlässlichen Kontrast).
+function deriveSurfaceColors(bgHex){
+  const { h, s, v } = hexToHsv(bgHex);
+  const cappedS = Math.min(s, 22);
+  const clampV = x => Math.max(0, Math.min(100, x));
+  if (v < 50){
+    return {
+      surface:  hsvToHex(h, cappedS, clampV(v + 5)),
+      surface2: hsvToHex(h, cappedS, clampV(v + 9)),
+      border:   hsvToHex(h, cappedS, clampV(v + 15)),
+    };
+  }
+  return {
+    surface:  hsvToHex(h, Math.min(cappedS, 8), clampV(Math.max(v + 4, 99))),
+    surface2: hsvToHex(h, cappedS, clampV(v - 4)),
+    border:   hsvToHex(h, cappedS, clampV(v - 10)),
+  };
+}
 function applyTheme(){
   document.documentElement.setAttribute('data-theme', currentThemeMode());
   const accentHex = currentAccentColor().hex;
@@ -2480,8 +2578,15 @@ function applyTheme(){
   const root = document.documentElement.style;
   if (bgColor){
     root.setProperty('--bg', bgColor.hex);
+    const derived = deriveSurfaceColors(bgColor.hex);
+    root.setProperty('--surface', derived.surface);
+    root.setProperty('--surface-2', derived.surface2);
+    root.setProperty('--border', derived.border);
   } else {
     root.removeProperty('--bg');
+    root.removeProperty('--surface');
+    root.removeProperty('--surface-2');
+    root.removeProperty('--border');
   }
 }
 
@@ -3795,41 +3900,38 @@ function weekStripHTML(){
   for (let w = WEEK_STRIP_PAST_WEEKS; w >= 0; w--){
     const monday = new Date(currentMonday);
     monday.setDate(currentMonday.getDate() - w * 7);
-    weeksHTML.push(`<button class="week-strip" type="button" aria-label="Monatsübersicht öffnen">${weekStripDaysHTML(monday)}</button>`);
+    const isCurrent = w === 0;
+    const arrowHTML = isCurrent ? '' : `<button class="week-strip-arrow-inline" type="button" aria-label="Zur aktuellen Woche"><img src="${ICON_CHEVRON_RIGHT}" alt=""></button>`;
+    weeksHTML.push(`
+      <div class="week-strip-slide">
+        <button class="week-strip" type="button" aria-label="Monatsübersicht öffnen">${weekStripDaysHTML(monday)}</button>
+        ${arrowHTML}
+      </div>
+    `);
   }
 
   return `
     <div class="week-strip-wrap">
       <div class="week-strip-scroll" id="weekStripScroll">${weeksHTML.join('')}</div>
-      <button class="week-strip-arrow-btn" id="weekStripArrow" type="button" aria-label="Zur aktuellen Woche"><img src="${ICON_CHEVRON_RIGHT}" alt=""></button>
     </div>
   `;
 }
 // Nach jedem renderHome(): Klick-Handler auf ALLE Wochen im Streifen (nicht nur die aktuelle)
 // und Scroll-Position ohne Animation ganz an den rechten Rand (= aktuelle Woche) setzen, damit
 // der Streifen wie zuvor mit sichtbarer aktueller Woche startet — erst ein bewusstes Wischen
-// nach links blättert zu älteren Wochen zurück. Der Pfeil-Button (siehe CSS: eigene, bei der
-// aktuellen Woche eingeklappte Spalte) scrollt bei Tap animiert zurück zur aktuellen Woche,
-// statt wie die Wochen-Buttons selbst die Monatsübersicht zu öffnen.
+// nach links blättert zu älteren Wochen zurück. Der Pfeil ist (siehe weekStripHTML()) fest Teil
+// jeder vergangenen Woche, es gibt also nichts mehr, das per Scroll-Listener umgeschaltet werden
+// müsste — Tap auf den Pfeil scrollt animiert zurück zur aktuellen Woche, Tap auf die Woche
+// selbst öffnet wie gehabt die Monatsübersicht.
 function wireWeekStrip(){
   const scroller = document.getElementById('weekStripScroll');
   if (!scroller) return;
   scroller.scrollLeft = scroller.scrollWidth;
-  const arrow = document.getElementById('weekStripArrow');
-  const updateArrow = () => {
-    if (!arrow) return;
-    // Kleine Toleranz (4px) statt exaktem Vergleich, da scrollWidth/clientWidth/scrollLeft je
-    // nach Zoom/Subpixel-Rendering leicht (unter 1px) voneinander abweichen können.
-    const atCurrentWeek = scroller.scrollLeft >= scroller.scrollWidth - scroller.clientWidth - 4;
-    arrow.classList.toggle('visible', !atCurrentWeek);
-  };
-  updateArrow();
-  scroller.addEventListener('scroll', updateArrow);
-  if (arrow){
-    arrow.onclick = () => scroller.scrollTo({ left: scroller.scrollWidth, behavior: 'smooth' });
-  }
   scroller.querySelectorAll('.week-strip').forEach(btn => {
     btn.onclick = () => goMonthOverview();
+  });
+  scroller.querySelectorAll('.week-strip-arrow-inline').forEach(btn => {
+    btn.onclick = () => scroller.scrollTo({ left: scroller.scrollWidth, behavior: 'smooth' });
   });
 }
 
@@ -4746,12 +4848,17 @@ function openHistoryContextMenu(sessionId){
 
 function historyRowHTML(s){
   const totalSets = s.entries.reduce((a,e)=>a+e.sets.length,0);
+  // Kleiner, unauffälliger Hinweis bei Einheiten, die über die "Frei"-Kachel liefen — vor allem
+  // relevant, wenn diese Zeile gerade wegen sessionMatchesFilter()'s Cross-Listing unter einem
+  // ANDEREN Kachel-Filter (z. B. "Push") auftaucht, aber auch sonst eine nützliche Info.
+  const freiTag = s.mode === 'frei' ? `<span class="history-free-tag">frei</span>` : '';
   return `
     <div class="history-row" data-id="${s.id}" role="button" tabindex="0" style="-webkit-user-select:none; user-select:none; -webkit-touch-callout:none; touch-action:manipulation;">
       <div style="-webkit-user-select:none; user-select:none;">
         <div class="history-date" style="-webkit-user-select:none; user-select:none;">${fmtDate(s.date)}</div>
         <div class="history-meta" style="-webkit-user-select:none; user-select:none;">${s.entries.length} Übungen · ${totalSets} Sätze</div>
       </div>
+      ${freiTag}
       <div class="history-meta" style="-webkit-user-select:none; user-select:none;">${fmtDuration(s.durationSec)}</div>
     </div>`;
 }
@@ -5764,19 +5871,51 @@ let workoutsMonthOpenInitialized = false;
 // Auto-Zusammenfass-Logik weiter unten) — einzeln wieder aufklappbar zur vollen Monatsansicht.
 let workoutsYearCollapsed = new Set();
 
-// Prüft, ob eine Session zu einer gewählten Kategorie passt — 'oberkoerper'/'unterkoerper'
-// vergleicht mit exercise.category, 'push'/'pull'/'legs' mit exercise.bodyPart (siehe
-// Push/Pull/Legs-Zuordnung im Übungen-Editor). Eine Session passt, sobald MINDESTENS eine
-// ihrer Übungen der gewählten Kategorie angehört (nicht alle) — bei gemischten Einheiten
-// (z. B. Ganzkörper) taucht die Session also unter mehreren Kategorie-Filtern auf.
-function sessionMatchesCategory(session, category){
-  if (category === 'all') return true;
+// Ermittelt für eine Kachel (Modus), ob sie einer der 5 festen Übungs-Klassifikationen
+// (oberkoerper/unterkoerper/push/pull/legs) zugeordnet ist — modePoolFilter() liefert exakt
+// eine davon oder 'all' (z. B. bei Ganzkörper oder einer Custom-Kategorie ohne engere
+// Einschränkung). Wird gebraucht, um "Frei"-Einheiten anhand ihrer Übungen den passenden
+// Kachel-Filtern zuzuordnen (siehe sessionMatchesFilter()).
+function workoutsFilterClassKey(mode){
+  const pf = modePoolFilter(mode);
+  return pf === 'all' ? null : pf;
+}
+// Baut die Filter-Optionen NICHT mehr aus einer festen Liste (Oberkörper/Unterkörper/Push/Pull/
+// Legs), sondern aus den tatsächlich in der Historie vorkommenden Kacheln (session.mode) — mit
+// deren AKTUELLEM Anzeigenamen (modeDisplayLabel, berücksichtigt Umbenennungen und Custom-
+// Kategorien). Kacheln, mit denen noch nie trainiert wurde, tauchen dadurch gar nicht erst auf.
+// "Frei" bekommt nur dann eine eigene Option, wenn tatsächlich schon frei trainiert wurde — und
+// steht (unabhängig von der sonstigen Kachel-Reihenfolge) IMMER ganz unten, mit eigener
+// Bezeichnung "Freies Training" statt des rohen Kachel-Namens "frei" (MODE_LABELS kennt "frei"
+// gar nicht, modeDisplayLabel() würde sonst nur die rohe id zurückgeben).
+function workoutsFilterOptions(allSessions){
+  const usedModes = [...new Set(allSessions.map(s => s.mode))];
+  const order = allStartTileIds();
+  const tileOptions = usedModes
+    .filter(m => m !== 'frei')
+    .sort((a, b) => order.indexOf(a) - order.indexOf(b))
+    .map(mode => ({ id: mode, label: modeDisplayLabel(mode) }));
+  const options = [{ id: 'all', label: 'Alle' }, ...tileOptions];
+  if (usedModes.includes('frei')) options.push({ id: 'frei', label: 'Freies Training' });
+  return options;
+}
+// Prüft, ob eine Session zum gewählten Kachel-Filter passt: direkt, wenn die Session über genau
+// diese Kachel gestartet wurde — ODER, falls die Session über "Frei" lief, zusätzlich anhand
+// ihrer Übungen (mindestens eine Übung muss der Übungs-Klassifikation der gewählten Kachel
+// angehören, siehe workoutsFilterClassKey()). Eine Ganzkörper-/Custom-Kachel ohne feste
+// Klassifikation (classKey null) bekommt dadurch KEINE Frei-Einheiten zugelost — nur die 5
+// festen Klassifikationen (oberkoerper/unterkoerper/push/pull/legs) sind dafür eindeutig genug.
+function sessionMatchesFilter(session, filterId){
+  if (filterId === 'all') return true;
+  if (session.mode === filterId) return true;
+  if (session.mode !== 'frei' || filterId === 'frei') return false;
+  const classKey = workoutsFilterClassKey(filterId);
+  if (!classKey) return false;
   return session.entries.some(e => {
     const planEx = plan.exercises.find(x => x.id === e.exerciseId);
     if (!planEx) return false;
-    if (category === 'oberkoerper' || category === 'unterkoerper') return planEx.category === category;
-    if (category === 'push' || category === 'pull' || category === 'legs') return planEx.bodyPart === category;
-    return false;
+    if (classKey === 'oberkoerper' || classKey === 'unterkoerper') return planEx.category === classKey;
+    return planEx.bodyPart === classKey;
   });
 }
 
@@ -5787,7 +5926,7 @@ function renderWorkoutsOverview(){
 
   const filtered = allSorted.filter(s => {
     if (workoutsFilterYear !== 'all' && new Date(s.date).getFullYear() !== workoutsFilterYear) return false;
-    if (!sessionMatchesCategory(s, workoutsFilterCategory)) return false;
+    if (!sessionMatchesFilter(s, workoutsFilterCategory)) return false;
     return true;
   });
 
@@ -5824,20 +5963,21 @@ function renderWorkoutsOverview(){
     workoutsMonthOpenInitialized = true;
   }
 
-  const CATEGORY_LABELS = { all: 'Alle', oberkoerper: 'Oberkörper', unterkoerper: 'Unterkörper', push: 'Push', pull: 'Pull', legs: 'Legs' };
-  const categoryOptions = ['all', 'oberkoerper', 'unterkoerper', 'push', 'pull', 'legs'];
+  const workoutsFilterOptionsList = workoutsFilterOptions(allSorted);
 
   const bodyHTML = yearGroups.map(yg => {
     const totalSessions = yg.months.reduce((a,m) => a + m.sessions.length, 0);
     const monthsHTML = yg.months.map(mg => {
       const isOpen = workoutsMonthOpen.has(mg.label);
       return `
-        <button class="muscle-group-header" data-month="${mg.label.replace(/"/g,'&quot;')}" type="button">
-          <span class="mg-name">${mg.label}</span>
-          <span class="mg-meta">${mg.sessions.length} Einheit${mg.sessions.length === 1 ? '' : 'en'} <span class="mg-arrow">${isOpen ? '▾' : '▸'}</span></span>
-        </button>
-        <div class="muscle-group-body" style="display:${isOpen ? 'block' : 'none'}">
-          ${mg.sessions.map(historyRowHTML).join('')}
+        <div class="muscle-group">
+          <button class="muscle-group-header" data-month="${mg.label.replace(/"/g,'&quot;')}" type="button">
+            <span class="mg-name">${mg.label}</span>
+            <span class="mg-meta">${mg.sessions.length} Einheit${mg.sessions.length === 1 ? '' : 'en'} <span class="mg-arrow">${isOpen ? '▾' : '▸'}</span></span>
+          </button>
+          <div class="muscle-group-body" style="display:${isOpen ? 'block' : 'none'}">
+            ${mg.sessions.map(historyRowHTML).join('')}
+          </div>
         </div>
       `;
     }).join('');
@@ -5870,7 +6010,7 @@ function renderWorkoutsOverview(){
         ${years.map(y => `<option value="${y}" ${workoutsFilterYear === y ? 'selected' : ''}>${y}</option>`).join('')}
       </select>
       <select class="workouts-filter-select" id="workoutsCategoryFilter">
-        ${categoryOptions.map(c => `<option value="${c}" ${workoutsFilterCategory === c ? 'selected' : ''}>${CATEGORY_LABELS[c]}</option>`).join('')}
+        ${workoutsFilterOptionsList.map(o => `<option value="${o.id}" ${workoutsFilterCategory === o.id ? 'selected' : ''}>${o.label}</option>`).join('')}
       </select>
     </div>
 
@@ -6444,14 +6584,14 @@ function openProgressStatsEditPrompt(type, order, labels, exerciseName, onToggle
 // Long-Press-Drag zum Umsortieren der Statistik-Akkordeons (analog wireMuscleGroupReorder(),
 // siehe dort für die Basis-Choreografie: 350ms halten armiert den Drag, danach per
 // window-weiten Pointer-Listenern weiterziehen; kurzes Antippen klappt stattdessen auf/zu).
-// Anders als bei wireMuscleGroupReorder() steuert hier NICHT manuelles window.scrollBy() das
-// Scrollen während des Wartens auf den Long-Press — die Köpfe stehen per CSS auf
-// touch-action:pan-y (siehe #exerciseStatsList-Regel), der Browser übernimmt natives, träges
-// (Momentum-)Vertikal-Scrollen also von sich aus. Bewegt sich der Finger vor Ablauf der 350ms
-// über die Toleranzschwelle hinaus, wird nur noch der Long-Press-Timer abgebrochen (der Browser
-// hat die Geste ohnehin meist schon selbst als Scroll übernommen und bricht die Pointer-Session
-// per pointercancel ab, siehe onCancel) — erst NACH dem Armieren verhindert preventDefault() auf
-// dem jeweiligen Move-Event, dass der Browser die Kontrolle behält.
+// Scrollen während des Wartens auf den Long-Press läuft über manuelles window.scrollBy() (NICHT
+// über natives touch-action:pan-y — das wurde hier zwischenzeitlich versucht für butterweiches
+// Momentum-Scrollen, aber touch-action:pan-y erlaubt dem Browser, direkt im Compositor-Thread zu
+// scrollen OHNE auf JavaScript zu warten; dadurch konnte er mitten im bereits laufenden Drag
+// plötzlich doch die Kontrolle übernehmen — die Seite sprang weg, teils bis zum Pull-to-refresh
+// am oberen Rand, komplett unabhängig davon, ob onMove() noch preventDefault() aufruft. touch-
+// action:none zwingt den Browser, jede Bewegung zuerst durch JS laufen zu lassen — Drag-
+// Zuverlässigkeit geht hier klar vor nativer Scroll-Anmutung).
 // WICHTIG: opts.rerender darf NUR den Inhalt von containerSelector selbst neu aufbauen (z. B.
 // container.innerHTML = ...), NICHT die komplette Seite (app.innerHTML) — sonst wird das hier
 // oben per document.querySelector() eingefangene container-Element beim Armieren des Drags
@@ -6467,7 +6607,7 @@ function wireProgressStatsReorder(containerSelector, opts){
   container.querySelectorAll(':scope > .muscle-group > .muscle-group-header').forEach(header => {
     const key = header.dataset.group;
     let pressTimer = null, pointerId = null;
-    let startX = 0, startY = 0;
+    let startX = 0, startY = 0, lastX = 0, lastY = 0;
     let mode = 'pending';
     let fromIndex = -1, targetIndex = -1, rowHeight = 0, dragEl = null, visibleOrder = null;
 
@@ -6480,16 +6620,19 @@ function wireProgressStatsReorder(containerSelector, opts){
 
     const onMove = (ev) => {
       if (ev.pointerId !== pointerId) return;
+      const dyStep = ev.clientY - lastY;
+      lastX = ev.clientX; lastY = ev.clientY;
 
       if (mode === 'pending'){
         const dx = ev.clientX - startX, dy = ev.clientY - startY;
         if (Math.abs(dx) > MOVE_CANCEL_PX || Math.abs(dy) > MOVE_CANCEL_PX){
           mode = 'scrolling';
           clearTimeout(pressTimer);
+          window.scrollBy(0, -dyStep);
         }
         return;
       }
-      if (mode === 'scrolling') return; // Browser scrollt (touch-action:pan-y) selbst weiter.
+      if (mode === 'scrolling'){ window.scrollBy(0, -dyStep); return; }
       if (mode !== 'dragging' || !dragEl) return;
       ev.preventDefault();
       const dy = ev.clientY - startY;
@@ -6533,7 +6676,7 @@ function wireProgressStatsReorder(containerSelector, opts){
 
     header.addEventListener('pointerdown', (e) => {
       pointerId = e.pointerId;
-      startX = e.clientX; startY = e.clientY;
+      startX = e.clientX; startY = e.clientY; lastX = startX; lastY = startY;
       mode = 'pending'; fromIndex = -1; targetIndex = -1; dragEl = null; visibleOrder = null;
 
       pressTimer = setTimeout(() => {
@@ -8537,6 +8680,29 @@ function downscaleImageFile(file){
 // vollständige Detail-Popup öffnet (siehe openPlanRowEditPopup). Alle Detail-Felder (Sätze,
 // Wdh/Zeit, Körperbereich, Muskelgruppe, Push/Pull/Legs, Haken etc.) leben jetzt nur noch im
 // Popup — die Übersichtsliste bleibt dadurch kompakt, auch bei vielen Übungen pro Gruppe.
+// Favorisierte Übungen (Übungen-Screen + Übungsbild-Popup, siehe renderPlanEditor()/
+// openExerciseImagePopup()) — reine id-Liste in plan.favoriteExerciseIds, unabhängig von den
+// Farb-Favoriten (favoriteAccentColors()) weiter oben.
+function favoriteExerciseIds(){
+  return Array.isArray(plan.favoriteExerciseIds) ? plan.favoriteExerciseIds : [];
+}
+function isExerciseFavorite(id){
+  return favoriteExerciseIds().includes(id);
+}
+async function toggleExerciseFavorite(id){
+  const favs = favoriteExerciseIds().slice();
+  const idx = favs.indexOf(id);
+  if (idx === -1) favs.push(id); else favs.splice(idx, 1);
+  plan.favoriteExerciseIds = favs;
+  await saveJSON('plan', plan);
+}
+// Stern-Icon als Inline-SVG statt Bilddatei — dadurch kann die Füllung exakt der frei wählbaren
+// Akzentfarbe folgen (currentColor, gleiches Prinzip wie das Repeat-Icon bei "Nochmal
+// trainieren"), was mit einem gefilterten Raster-Icon bei einer beliebigen Akzentfarbe nicht
+// zuverlässig möglich wäre. Gefüllt = favorisiert, nur Umriss = nicht favorisiert.
+function starIconSVG(filled){
+  return `<svg viewBox="0 0 24 24" width="20" height="20" fill="${filled ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.63 22 9.24 16.5 14.14 18.18 21 12 17.27 5.82 21 7.5 14.14 2 9.24 8.91 8.63 12 2"></polygon></svg>`;
+}
 function renderExerciseRowHTML(ex, i){
   return `
     <div class="plan-row" data-i="${i}">
@@ -8544,6 +8710,7 @@ function renderExerciseRowHTML(ex, i){
         ${ex.imageData ? `<img class="plan-row-thumb" src="${ex.imageData}" alt="">` : `<span class="plan-row-thumb-fallback">${initials(ex.name)}</span>`}
       </div>
       <div class="plan-row-name">${exerciseNameHTML(ex.name)}</div>
+      <button type="button" class="exercise-fav-btn" data-fav="${ex.id}" aria-label="${isExerciseFavorite(ex.id) ? 'Favorit entfernen' : 'Als Favorit markieren'}">${starIconSVG(isExerciseFavorite(ex.id))}</button>
       <button type="button" class="plan-row-edit-btn" data-edit="${i}" aria-label="Bearbeiten"><img src="${ICON_EDIT}" alt=""></button>
     </div>
   `;
@@ -8662,7 +8829,10 @@ function openExerciseImagePopup(ex){
     <div class="add-exercise-modal" style="max-height:88vh;">
       <div class="add-exercise-modal-header">
         <div class="add-exercise-modal-title">${exerciseNameHTML(ex.name)}</div>
-        <button class="add-exercise-modal-close" id="exerciseImagePopupClose" aria-label="Schließen">✕</button>
+        <div class="add-exercise-modal-header-icons">
+          <button type="button" class="exercise-fav-btn" id="exerciseImagePopupFav" aria-label="${isExerciseFavorite(ex.id) ? 'Favorit entfernen' : 'Als Favorit markieren'}">${starIconSVG(isExerciseFavorite(ex.id))}</button>
+          <button class="add-exercise-modal-close" id="exerciseImagePopupClose" aria-label="Schließen">✕</button>
+        </div>
       </div>
       <div class="new-exercise-modal-body">
         ${ex.imageData
@@ -8679,6 +8849,13 @@ function openExerciseImagePopup(ex){
   const close = () => { popOverlayStateIfOpen(); remove(); };
   document.getElementById('exerciseImagePopupClose').onclick = close;
   overlay.onclick = (ev) => { if (ev.target === overlay) close(); };
+  document.getElementById('exerciseImagePopupFav').onclick = async () => {
+    await toggleExerciseFavorite(ex.id);
+    const btn = document.getElementById('exerciseImagePopupFav');
+    const nowFav = isExerciseFavorite(ex.id);
+    btn.innerHTML = starIconSVG(nowFav);
+    btn.setAttribute('aria-label', nowFav ? 'Favorit entfernen' : 'Als Favorit markieren');
+  };
 }
 
 // Öffnet das Bearbeiten-Popup für eine einzelne Übung im Übungen-Editor (renderPlanEditor) —
@@ -9206,7 +9383,7 @@ function renderSettings(){
           <img class="accent-custom-btn-icon" src="${ICON_COLORWHEEL}" alt="">
           Eigene Farbe wählen
         </button>
-        <label style="display:block; font-size:12px; color:var(--muted); margin:18px 0 10px;">Hintergrundfarbe</label>
+        <label style="display:block; font-size:12px; color:var(--muted); margin:18px 0 10px;">Themes</label>
         <button class="muscle-group-header" id="bgPickerToggle" type="button" style="margin-bottom:${bgPickerOpen ? '12px' : '0'};">
           <span class="mg-name" style="display:flex; align-items:center; gap:10px; font-family:inherit; font-size:14px; letter-spacing:normal;">
             <span style="width:20px; height:20px; border-radius:7px; background:${currentBgColor() ? currentBgColor().hex : 'var(--bg)'}; border:1px solid var(--border); display:inline-block; flex-shrink:0;"></span>
@@ -9216,8 +9393,8 @@ function renderSettings(){
         </button>
         <div class="accent-swatch-grid" style="display:${bgPickerOpen ? 'grid' : 'none'};">
           <button class="accent-swatch ${!currentBgColor() ? 'selected' : ''}" data-bg-id="default" style="background:var(--surface-2); border:1px dashed var(--border); display:flex; align-items:center; justify-content:center; font-size:15px; color:var(--muted);" aria-label="Standard">✕</button>
-          ${allAccentSwatches().map(c => `
-            <button class="accent-swatch ${currentBgColor() && currentBgColor().id === c.id ? 'selected' : ''}" data-bg-id="${c.id}" data-bg-hex="${c.hex}" data-favorite="${c.isFavorite ? '1' : ''}" style="background:${c.hex};" aria-label="${c.name}"></button>
+          ${bgSwatchesForCurrentMode().map(c => `
+            <button class="accent-swatch ${currentBgColor() && currentBgColor().id === c.id ? 'selected' : ''}" data-bg-id="${c.id}" data-bg-hex="${c.hex}" data-favorite="${c.isFavorite ? '1' : ''}" style="background:${c.hex}; ${c.isFavorite ? '' : 'border:1px solid var(--border);'}" aria-label="${c.name}"></button>
           `).join('')}
         </div>
         <div class="history-empty" id="bgFavHint" style="display:${bgPickerOpen && favoriteAccentColors().length ? 'block' : 'none'}; margin-top:8px; padding:8px 4px; text-align:left; background:none; border:none;">
@@ -9285,7 +9462,7 @@ function renderSettings(){
     ${settingsAccordionSection('split', 'Trainings-Split', `
       <div style="text-align:left; padding:14px 16px;">
         <label class="justify-text" style="display:block; font-size:12px; color:var(--muted); margin-bottom:10px;">
-          Markiert auf der Startseite automatisch das nächste fällige A/B, basierend auf deinem zuletzt absolvierten Training. Bei „Push / Pull / Legs" müssen entsprechend benannte Kacheln existieren (über das Stift-Symbol umbenennen oder als neue Kategorie anlegen).
+          Markiert auf der Startseite automatisch das nächste fällige A/B, basierend auf deinem zuletzt absolvierten Training. Bei „Push / Pull / Legs" müssen entsprechend benannte Kacheln existieren (lang gedrückt halten zum Umbenennen oder als neue Kategorie anlegen).
         </label>
         <div class="wizard-choice-list">
           <button class="wizard-choice ${!plan.splitMode ? 'selected' : ''}" data-split-mode="">Aus</button>
@@ -9317,10 +9494,9 @@ function renderSettings(){
 
     <div class="section-label">Daten</div>
     <div class="muscle-group-header settings-static-row" style="margin-top:0;">
-      <span class="mg-name">Daten</span>
-      <div class="settings-row-btns">
-        <button class="btn btn-ghost btn-small" id="btnExport">Exportieren</button>
-        <button class="btn btn-ghost btn-small" id="btnImport">Importieren</button>
+      <div class="settings-row-btns" style="width:100%;">
+        <button class="btn btn-ghost btn-small" id="btnExport" style="flex:1;">Exportieren</button>
+        <button class="btn btn-ghost btn-small" id="btnImport" style="flex:1;">Importieren</button>
       </div>
     </div>
     <input type="file" id="importFile" accept="application/json" style="display:none;">
@@ -9839,7 +10015,25 @@ function renderPlanEditor(){
       return;
     }
 
-    container.innerHTML = orderedGroups.map(g => {
+    // Favoriten-Akkordeon IMMER ganz oben, unabhängig von der Muskelgruppen-Reihenfolge —
+    // reuse denselben Öffnen/Schließen-Mechanismus wie die Muskelgruppen (planGroupOpen), nur
+    // mit dem Schlüssel '__favorites__' statt eines Gruppennamens. Erscheint nur, wenn es
+    // überhaupt Favoriten gibt (und die aktuelle Suche mindestens einen davon trifft).
+    const favItems = indexed.filter(({ ex }) => isExerciseFavorite(ex.id));
+    const favOpen = q ? true : planGroupOpen.has('__favorites__');
+    const favoritesHTML = favItems.length ? `
+      <div class="muscle-group">
+        <button class="muscle-group-header" data-group="__favorites__" type="button">
+          <span class="mg-name">Favoriten</span>
+          <span class="mg-meta">${favItems.length} Übung${favItems.length === 1 ? '' : 'en'} <span class="mg-arrow">${favOpen ? '▾' : '▸'}</span></span>
+        </button>
+        <div class="muscle-group-body" style="display:${favOpen ? 'block' : 'none'}">
+          ${favItems.map(({ ex, i }) => renderExerciseRowHTML(ex, i)).join('')}
+        </div>
+      </div>
+    ` : '';
+
+    container.innerHTML = favoritesHTML + orderedGroups.map(g => {
       const items = groups[g];
       const isOpen = q ? true : planGroupOpen.has(g);
       return `
@@ -9872,6 +10066,12 @@ function renderPlanEditor(){
       el.onclick = () => {
         const i = Number(el.closest('.plan-row').dataset.i);
         openExerciseImagePopup(plan.exercises[i]);
+      };
+    });
+    container.querySelectorAll('[data-fav]').forEach(btn => {
+      btn.onclick = async () => {
+        await toggleExerciseFavorite(btn.dataset.fav);
+        renderPlanRows();
       };
     });
   }
@@ -12356,7 +12556,7 @@ function renderSessionDetail(id){
       <td>${i===0 ? exerciseNameHTML(e.name) : ''}</td>
       <td>${i+1}</td>
       <td>${e.type === 'time' ? fmtSec(set.seconds) : (set.reps ?? '—')}</td>
-      <td>${e.type === 'time' ? '—' : (set.weight ?? '—') + (set.weight ? ' kg' : '')}</td>
+      <td>${e.type === 'time' ? '—' : (set.weight ?? '—')}</td>
       ${sessionHasCardio ? `<td>${cardioSetSummary(planEx, set) || '—'}</td>` : ''}
     </tr>
   `).join('');
@@ -12415,10 +12615,12 @@ function renderSessionDetail(id){
         <span class="mg-meta"><span class="mg-arrow" id="fullToggleChevron">▸</span></span>
       </button>
       <div class="muscle-group-body" id="fullTableWrap" style="display:none; padding:2px 16px 14px;">
+        <div class="detail-table-wrap">
         <table class="detail-table">
-          <thead><tr><th>Übung</th><th>Satz</th><th>Wdh/Zeit</th><th>Gewicht</th>${sessionHasCardio ? '<th>Kardio</th>' : ''}</tr></thead>
+          <thead><tr><th>Übung</th><th>Satz</th><th>Wdh/Zeit</th><th>Gewicht (kg)</th>${sessionHasCardio ? '<th>Kardio</th>' : ''}</tr></thead>
           <tbody>${rows}</tbody>
         </table>
+        </div>
       </div>
     </div>
     <div class="detail-actions no-print">
