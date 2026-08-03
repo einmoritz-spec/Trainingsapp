@@ -12599,11 +12599,11 @@ function renderSessionDetail(id){
     </div>
     ${highlightsHTML ? `
     <div class="muscle-group" style="margin-bottom:14px;">
-      <button class="muscle-group-header" id="btnToggleErfolge" type="button" aria-expanded="true">
+      <button class="muscle-group-header" id="btnToggleErfolge" type="button" aria-expanded="false">
         <span class="mg-name">Erfolge</span>
-        <span class="mg-meta"><span class="mg-arrow" id="erfolgeArrow">▾</span></span>
+        <span class="mg-meta"><span class="mg-arrow" id="erfolgeArrow">▸</span></span>
       </button>
-      <div class="muscle-group-body" id="erfolgeBody" style="display:block;">
+      <div class="muscle-group-body" id="erfolgeBody" style="display:none;">
         <div class="summary-list">
           ${highlightsHTML}
         </div>
