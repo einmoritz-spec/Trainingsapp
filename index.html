@@ -258,6 +258,9 @@ html[data-theme="light"] .week-strip-arrow-inline img{ filter:none; }
 .month-overview-block{ padding:22px 20px 6px; }
 .month-overview-title{ font-size:26px; font-weight:800; margin:0 0 4px; }
 .month-overview-subtitle{ font-size:14px; color:var(--muted); margin:0 0 18px; }
+/* Zweite, dezentere Zeile für Warm-up-/Deload-Zähler (siehe monthOverviewBlockHTML()) —
+   rückt näher an die erste Zeile heran (kein doppelter 18px-Abstand) und ist etwas kleiner. */
+.month-overview-tracking-subtitle{ font-size:12px; margin:-14px 0 18px; opacity:0.8; }
 .month-overview-grid{
   display:grid; grid-template-columns:repeat(7, 1fr); row-gap:22px; column-gap:4px;
 }
@@ -1807,6 +1810,9 @@ html[data-theme="dark"] .active-back-btn img{ filter:invert(1); }
 .tools-section{ padding:14px 16px; text-align:left; border-bottom:1px solid var(--border); }
 .tools-section:last-child{ border-bottom:none; }
 .tools-section-title{ font-size:13px; font-weight:600; margin-bottom:8px; }
+.tools-section-title-row{ display:flex; justify-content:space-between; align-items:center; }
+.tools-section-title-group{ display:flex; align-items:baseline; gap:8px; min-width:0; }
+.tools-section-title-hint{ font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .tools-section-hint{ font-size:12px; color:var(--muted); margin-bottom:10px; line-height:1.5; }
 .plate-result-row{ display:flex; justify-content:space-between; align-items:center; padding:6px 0; font-size:14px; border-bottom:1px solid var(--border); }
 .plate-result-row:last-child{ border-bottom:none; }
@@ -1818,6 +1824,8 @@ html[data-theme="dark"] .active-back-btn img{ filter:invert(1); }
 .plate-calc-input-row{ display:flex; gap:8px; }
 .plate-calc-input-row input{ flex:1; min-width:0; padding:10px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-size:16px; text-align:center; }
 .plate-calc-input-row button{ flex:0 0 auto; white-space:nowrap; }
+.plate-calc-barweight-row{ display:flex; align-items:center; gap:8px; margin-bottom:10px; font-size:13px; color:var(--muted); }
+.plate-calc-barweight-row input{ width:56px; min-width:0; padding:6px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-size:14px; text-align:center; }
 
 /* Standard-Pausetimer-Auswahl im Popup: 4 gleich breite Felder (Aus/30/60/90) NEBENEINANDER
    in einer Reihe statt untereinander (wie sonst wizard-choice-list) — optisch analog zur
@@ -1839,6 +1847,10 @@ html[data-theme="dark"] .active-back-btn img{ filter:invert(1); }
 .tools-rest-btn:last-child{ border-right:none; }
 .tools-rest-btn:active{ background: var(--surface); }
 .tools-rest-btn.is-active{ background: var(--surface); color: var(--accent); }
+/* Dezentes graues Plus statt Textlabel für das "Eigene"-Feld im Ruhezustand (siehe
+   openTrainingToolsPrompt() → Standard-Pausetimer) — sobald ein eigener Wert gesetzt ist,
+   zeigt der Button stattdessen die Sekundenzahl (normaler Text, keine Sonderbehandlung nötig). */
+.tools-rest-btn-plus{ color: var(--muted); font-size:18px; font-weight:400; line-height:1; }
 
 /* ---------- Print (PDF export) ---------- */
 @media print{
@@ -2971,11 +2983,78 @@ function openCustomRestPrompt(){
   overlay.onclick = (ev) => { if (ev.target === overlay) close(); };
 }
 
+// Eigene Dauer für den STANDARD-Pausetimer (Trainingstools-Popup, 4. Feld neben Aus/30/60/
+// 90) — im Unterschied zu openCustomRestPrompt() oben wird hier KEINE Pause gestartet,
+// sondern nur plan.defaultRestSeconds dauerhaft gesetzt (die Pause läuft dann automatisch
+// beim nächsten abgehakten Satz). type="text" statt "number", damit garantiert die normale
+// Systemtastatur erscheint statt des app-eigenen Scroll-Rads/Ziffernblocks (der reagiert nur
+// auf type="number", siehe isSystemKeyboardOnlyField()).
+function openDefaultRestCustomPrompt(onSaved){
+  const existing = document.getElementById('defaultRestCustomOverlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.className = 'add-exercise-overlay centered-overlay';
+  overlay.id = 'defaultRestCustomOverlay';
+  overlay.innerHTML = `
+    <div class="add-exercise-modal" style="max-height:none;">
+      <div class="add-exercise-modal-header">
+        <div class="add-exercise-modal-title">Eigene Pausenlänge</div>
+        <button class="add-exercise-modal-close" id="defaultRestCustomClose" aria-label="Abbrechen">✕</button>
+      </div>
+      <div class="new-exercise-modal-body">
+        <label class="justify-text" style="display:block; font-size:13px; color:var(--muted); margin-bottom:10px;">
+          Pausendauer in Sekunden eingeben.
+        </label>
+        <input type="text" inputmode="numeric" id="defaultRestCustomSeconds" placeholder="z. B. 45" enterkeyhint="done" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-size:18px; text-align:center;">
+      </div>
+      <div class="add-exercise-modal-header" style="border-top:1px solid var(--border); border-bottom:none; justify-content:center;">
+        <button class="perf-suggest-btn perf-suggest-btn-confirm" id="defaultRestCustomSubmit" type="button" aria-label="Speichern" style="width:56px; height:44px; font-size:20px;">✓</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  pushOverlayState(remove);
+
+  function remove(){ const el = document.getElementById('defaultRestCustomOverlay'); if (el) el.remove(); }
+  const close = () => { popOverlayStateIfOpen(); remove(); };
+
+  const input = document.getElementById('defaultRestCustomSeconds');
+  input.focus();
+  let submitted = false;
+  const submit = async () => {
+    if (submitted) return;
+    const seconds = Math.round(parseGermanNumber(input.value));
+    if (!input.value || isNaN(seconds) || seconds <= 0){
+      alert('Bitte eine gültige Anzahl Sekunden eingeben.');
+      return;
+    }
+    submitted = true;
+    plan.defaultRestSeconds = seconds;
+    await saveJSON('plan', plan);
+    close();
+    onSaved(seconds);
+  };
+  input.onkeydown = (ev) => {
+    if (ev.key === 'Enter'){ ev.preventDefault(); input.blur(); }
+  };
+  input.addEventListener('change', () => { if (input.value) submit(); });
+  document.getElementById('defaultRestCustomSubmit').onclick = submit;
+  document.getElementById('defaultRestCustomClose').onclick = close;
+  overlay.onclick = (ev) => { if (ev.target === overlay) close(); };
+}
+
+
 // Verfügbare Hantelscheiben (kg) für den Plattenrechner, größte zuerst — Standard-
-// Olympia-Satz. Langhantel-Eigengewicht ebenfalls fest hinterlegt (20kg, üblicher
-// Standard für eine olympische Langhantel).
+// Olympia-Satz. Das Stangengewicht ist NICHT mehr fest verdrahtet, sondern über
+// plan.barWeightKg einstellbar (siehe barWeightKg() unten) — Standard weiterhin 20kg
+// (üblicher Standard für eine olympische Langhantel), aber z. B. bei einer 15kg-Frauen-
+// stange oder einer festen Kurzhantel (0kg) anpassbar.
 const PLATE_SIZES = [25, 20, 15, 10, 5, 2.5, 1.25];
-const BAR_WEIGHT_KG = 20;
+const BAR_WEIGHT_KG_DEFAULT = 20;
+function barWeightKg(){
+  return Number.isFinite(plan.barWeightKg) ? plan.barWeightKg : BAR_WEIGHT_KG_DEFAULT;
+}
 
 // Berechnet, welche Scheiben PRO SEITE nötig sind, um `totalWeight` zu erreichen (inkl.
 // Stange). Rein greedy (größte Scheibe zuerst, so oft wie möglich) — für Standard-
@@ -2983,7 +3062,7 @@ const BAR_WEIGHT_KG = 20;
 // Stange unterschreitet oder sich mit den vorhandenen Scheiben nicht exakt (auf 1g genau)
 // erreichen lässt.
 function calcPlatesPerSide(totalWeight){
-  const perSide = (totalWeight - BAR_WEIGHT_KG) / 2;
+  const perSide = (totalWeight - barWeightKg()) / 2;
   if (perSide < 0) return null;
   let remaining = Math.round(perSide * 100); // in Gramm×10, um Rundungsfehler zu vermeiden
   const plates = [];
@@ -2998,6 +3077,42 @@ function calcPlatesPerSide(totalWeight){
   }
   if (remaining > 0) return { plates, remainder: remaining / 100 };
   return { plates, remainder: 0 };
+}
+
+// Deload-Schalter (siehe openTrainingToolsPrompt() → Abschnitt "Deload"): senkt für ALLE
+// Übungen der laufenden Einheit das Trainingsvolumen (Gewicht × Wdh) um ca. 50% — über
+// eine Kombination aus weniger Gewicht UND weniger Wiederholungen, damit die Wdh-Zahl in
+// einem normalen Trainingsbereich bleibt (8-12) statt z. B. bei gleichbleibenden Wdh nur
+// das Gewicht drastisch zu halbieren. Gewicht wird dabei immer auf 5kg-Schritte gerundet.
+// Zeitbasierte Einträge (Kardio) werden von beiden Funktionen bewusst nicht angefasst,
+// siehe Aufruf im Klick-Handler unten.
+// Die ECHTEN Originalwerte jedes Satzes werden einmalig in set._preDeload gesichert (beim
+// allerersten Einschalten in dieser Einheit) und bleiben dort unangetastet liegen, solange
+// die Einheit läuft — dadurch lässt sich der Schalter beliebig oft aus- und wieder
+// einschalten, ohne dass sich die Werte bei jedem Zyklus weiter reduzieren ("Drift").
+function applyDeloadToEntry(entry){
+  entry.sets.forEach(set => {
+    if (set.weight == null || set.reps == null || set.weight === '' || set.reps === '') return;
+    if (!set._preDeload) set._preDeload = { weight: set.weight, reps: set.reps };
+    const originalVolume = Number(set._preDeload.weight) * Number(set._preDeload.reps);
+    const targetVolume = originalVolume * 0.5;
+    const targetReps = Math.min(12, Math.max(8, Math.round(Number(set._preDeload.reps))));
+    let newWeight = Math.round((targetVolume / targetReps) / 5) * 5;
+    if (newWeight <= 0) newWeight = 5;
+    set.weight = newWeight;
+    set.reps = targetReps;
+  });
+}
+// Stellt die per applyDeloadToEntry() gesicherten Originalwerte wieder her (Schalter
+// ausschalten) — Sätze ohne _preDeload (z. B. erst nach dem Deload hinzugefügt) bleiben
+// unberührt.
+function revertDeloadFromEntry(entry){
+  entry.sets.forEach(set => {
+    if (set._preDeload){
+      set.weight = set._preDeload.weight;
+      set.reps = set._preDeload.reps;
+    }
+  });
 }
 
 // Popup "Trainingstools" (Zahnrad oben rechts im laufenden Training, siehe
@@ -3022,7 +3137,10 @@ function openTrainingToolsPrompt(entry, planEx){
     }
     if (lastWeight == null && entry.target && entry.target.weight != null) lastWeight = Number(entry.target.weight);
   }
-  const warmupWeight = lastWeight != null ? Math.round((lastWeight * 0.75) / 5) * 5 : null;
+  const warmupWeight = lastWeight != null ? Math.round((lastWeight * 0.6) / 5) * 5 : null;
+  // Warm-up ist bereits für DIESE Übung eingefügt, wenn der aktuelle Entry schon einen
+  // Satz mit warmup:true enthält — bestimmt den Anfangszustand des Schalters beim Öffnen.
+  const warmupAlreadyAdded = !!(entry && entry.sets.some(s => s.warmup));
 
   const restOptions = [30, 60, 90];
 
@@ -3038,31 +3156,59 @@ function openTrainingToolsPrompt(entry, planEx){
       <div class="new-exercise-modal-body" style="padding:0;">
 
         <div class="tools-section">
-          <div class="tools-section-title">Warm-up-Satz</div>
-          ${canWarmup ? `
-            <button class="btn btn-ghost btn-small" id="toolsAddWarmup" style="width:100%;" ${warmupWeight == null ? 'disabled' : ''}>
-              ${warmupWeight != null ? `Warm-up mit ${formatGermanNumber(warmupWeight)} kg hinzufügen` : 'Kein Gewicht hinterlegt'}
+          <div class="tools-section-title-row">
+            <div class="tools-section-title" style="margin-bottom:0;">Warm-up-Satz</div>
+            ${canWarmup ? `
+            <button class="toggle-switch ${warmupAlreadyAdded ? 'on' : ''}" id="toolsWarmupToggle" type="button" role="switch" aria-checked="${warmupAlreadyAdded}" aria-label="Warm-up-Satz" ${warmupWeight == null && !warmupAlreadyAdded ? 'disabled' : ''}>
+              <span class="toggle-knob"></span>
             </button>
-          ` : `<div class="tools-section-hint">Für diese Übung nicht verfügbar.</div>`}
+            ` : ''}
+          </div>
+          ${!canWarmup ? `<div class="tools-section-hint">Für diese Übung nicht verfügbar.</div>` : ''}
         </div>
 
         <div class="tools-section">
           <div class="tools-section-title">Standard-Pausetimer</div>
-          <div class="tools-section-hint">Startet nach jedem abgehakten Satz automatisch eine Pause in dieser Länge.</div>
           <div class="tools-rest-row">
             <button class="tools-rest-btn ${!plan.defaultRestSeconds ? 'is-active' : ''}" data-default-rest="">Aus</button>
             ${restOptions.map(s => `<button class="tools-rest-btn ${plan.defaultRestSeconds === s ? 'is-active' : ''}" data-default-rest="${s}">${s}s</button>`).join('')}
+            <button class="tools-rest-btn ${plan.defaultRestSeconds && !restOptions.includes(plan.defaultRestSeconds) ? 'is-active' : ''}" id="toolsDefaultRestCustomBtn" type="button" aria-label="Eigene Pausenlänge">${plan.defaultRestSeconds && !restOptions.includes(plan.defaultRestSeconds) ? `${plan.defaultRestSeconds}s` : '<span class="tools-rest-btn-plus">+</span>'}</button>
           </div>
         </div>
 
         <div class="tools-section">
           <div class="tools-section-title">Plattenrechner</div>
-          <div class="tools-section-hint">Gewicht eingeben — Anzeige der Scheiben pro Seite (Stange: ${BAR_WEIGHT_KG}kg).</div>
+          <div class="plate-calc-barweight-row">
+            <span class="plate-calc-barweight-label">Stange</span>
+            <input type="text" inputmode="decimal" id="plateCalcBarWeightInput" enterkeyhint="done" value="${formatGermanNumber(barWeightKg())}">
+            <span class="plate-calc-barweight-unit">kg</span>
+          </div>
           <div class="plate-calc-input-row">
             <input type="text" inputmode="decimal" id="plateCalcInput" placeholder="z. B. 100" enterkeyhint="done">
             <button class="btn btn-ghost btn-small" id="plateCalcSubmit">Berechnen</button>
           </div>
           <div id="plateCalcResult" style="margin-top:10px;"></div>
+        </div>
+
+        <div class="tools-section">
+          <div class="tools-section-title-row">
+            <div class="tools-section-title" style="margin-bottom:0;">Performancemodus</div>
+            <button class="toggle-switch ${plan.performanceMode ? 'on' : ''}" id="toolsPerfModeToggle" type="button" role="switch" aria-checked="${!!plan.performanceMode}" aria-label="Performancemodus">
+              <span class="toggle-knob"></span>
+            </button>
+          </div>
+        </div>
+
+        <div class="tools-section">
+          <div class="tools-section-title-row">
+            <div class="tools-section-title-group">
+              <span class="tools-section-title" style="margin-bottom:0;">Deload</span>
+              <span class="tools-section-title-hint">Entlastung zur Erholung</span>
+            </div>
+            <button class="toggle-switch ${active.deloadActive ? 'on' : ''}" id="toolsDeloadToggle" type="button" role="switch" aria-checked="${!!active.deloadActive}" aria-label="Deload">
+              <span class="toggle-knob"></span>
+            </button>
+          </div>
         </div>
 
       </div>
@@ -3077,10 +3223,19 @@ function openTrainingToolsPrompt(entry, planEx){
   document.getElementById('toolsClose').onclick = close;
   overlay.onclick = (ev) => { if (ev.target === overlay) close(); };
 
-  const warmupBtn = document.getElementById('toolsAddWarmup');
-  if (warmupBtn) warmupBtn.onclick = () => {
-    if (warmupWeight == null) return;
-    entry.sets.unshift({ weight: warmupWeight, reps: entry.sets[0] ? entry.sets[0].reps : null, done: false, warmup: true, autoFilled: true });
+  const warmupToggleEl = document.getElementById('toolsWarmupToggle');
+  if (warmupToggleEl) warmupToggleEl.onclick = () => {
+    // Schalter statt Button: einschalten fügt EINEN Warm-up-Satz für die aktuelle Übung
+    // ein (60% des letzten Gewichts, siehe warmupWeight oben), ausschalten entfernt ihn
+    // wieder — so bleibt der sichtbare Zustand des Schalters immer korrekt, auch wenn das
+    // Popup zwischendurch geschlossen und erneut geöffnet wird.
+    const alreadyAdded = entry.sets.some(s => s.warmup);
+    if (alreadyAdded){
+      entry.sets = entry.sets.filter(s => !s.warmup);
+    } else {
+      if (warmupWeight == null) return;
+      entry.sets.unshift({ weight: warmupWeight, reps: entry.sets[0] ? entry.sets[0].reps : null, done: false, warmup: true, autoFilled: true });
+    }
     close();
     renderActive();
   };
@@ -3091,37 +3246,96 @@ function openTrainingToolsPrompt(entry, planEx){
       plan.defaultRestSeconds = val ? Number(val) : null;
       await saveJSON('plan', plan);
       overlay.querySelectorAll('[data-default-rest]').forEach(b => b.classList.toggle('is-active', b === btn));
+      const customBtnEl = document.getElementById('toolsDefaultRestCustomBtn');
+      if (customBtnEl){
+        customBtnEl.classList.remove('is-active');
+        customBtnEl.innerHTML = '<span class="tools-rest-btn-plus">+</span>';
+      }
     };
   });
 
+  const defaultRestCustomBtnEl = document.getElementById('toolsDefaultRestCustomBtn');
+  if (defaultRestCustomBtnEl) defaultRestCustomBtnEl.onclick = () => {
+    openDefaultRestCustomPrompt((seconds) => {
+      defaultRestCustomBtnEl.textContent = `${seconds}s`;
+      defaultRestCustomBtnEl.classList.add('is-active');
+      overlay.querySelectorAll('[data-default-rest]').forEach(b => b.classList.remove('is-active'));
+    });
+  };
+
+  const toolsPerfModeToggleEl = document.getElementById('toolsPerfModeToggle');
+  if (toolsPerfModeToggleEl) toolsPerfModeToggleEl.onclick = async () => {
+    // Dieselbe plan.performanceMode-Einstellung wie in den Einstellungen selbst (siehe
+    // renderSettings() → perfModeToggle) — kein eigener Zustand, daher automatisch immer
+    // synchron mit dem dortigen Schalter, egal wo zuletzt umgeschaltet wurde.
+    plan.performanceMode = !plan.performanceMode;
+    await saveJSON('plan', plan);
+    toolsPerfModeToggleEl.classList.toggle('on', plan.performanceMode);
+    toolsPerfModeToggleEl.setAttribute('aria-checked', String(!!plan.performanceMode));
+  };
+
+  const toolsDeloadToggleEl = document.getElementById('toolsDeloadToggle');
+  if (toolsDeloadToggleEl) toolsDeloadToggleEl.onclick = () => {
+    active.deloadActive = !active.deloadActive;
+    // Ein-/Ausschalten wendet die Volumen-Reduzierung jetzt jedes Mal an bzw. macht sie
+    // rückgängig (statt nur einmalig zu wirken) — applyDeloadToEntry()/revertDeloadFromEntry()
+    // rechnen dabei immer von den in set._preDeload gesicherten ECHTEN Originalwerten aus,
+    // beliebig oft wiederholbar ohne Drift. Gilt bewusst NUR für diese laufende Einheit:
+    // `active` wird bei jedem neuen Trainingsstart komplett neu aufgebaut (siehe
+    // startSession()), wodurch deloadActive danach automatisch wieder fehlt (= aus) und
+    // auch die _preDeload-Marker der (dann verworfenen) Sätze mit verschwinden.
+    active.entries.forEach(e => {
+      if (e.type === 'time') return;
+      if (active.deloadActive) applyDeloadToEntry(e); else revertDeloadFromEntry(e);
+    });
+    close();
+    renderActive();
+  };
+
+  const barWeightInputEl = document.getElementById('plateCalcBarWeightInput');
+  if (barWeightInputEl){
+    const saveBarWeight = async () => {
+      const val = parseGermanNumber(barWeightInputEl.value);
+      plan.barWeightKg = (barWeightInputEl.value && !isNaN(val) && val >= 0) ? val : BAR_WEIGHT_KG_DEFAULT;
+      await saveJSON('plan', plan);
+      barWeightInputEl.value = formatGermanNumber(barWeightKg());
+    };
+    barWeightInputEl.onkeydown = (ev) => {
+      if (ev.key === 'Enter'){ ev.preventDefault(); barWeightInputEl.blur(); }
+    };
+    barWeightInputEl.onchange = saveBarWeight;
+  }
+
   const plateInput = document.getElementById('plateCalcInput');
   const plateResult = document.getElementById('plateCalcResult');
-  const runPlateCalc = () => {
-    const weight = parseGermanNumber(plateInput.value);
-    if (!plateInput.value || isNaN(weight) || weight <= 0){
-      plateResult.innerHTML = `<div class="tools-section-hint">Bitte ein gültiges Gewicht eingeben.</div>`;
-      return;
-    }
-    const result = calcPlatesPerSide(weight);
-    if (!result || !result.plates.length){
-      plateResult.innerHTML = `<div class="tools-section-hint">Gewicht liegt unter dem Stangengewicht (${BAR_WEIGHT_KG}kg) oder lässt sich nicht abbilden.</div>`;
-      return;
-    }
-    plateResult.innerHTML = `
-      <div class="plate-result-side">Pro Seite:</div>
-      ${result.plates.map(p => `
-        <div class="plate-result-row">
-          <span>${formatGermanNumber(p.size)} kg</span>
-          <span>× ${p.count}</span>
-        </div>
-      `).join('')}
-      ${result.remainder > 0 ? `<div class="tools-section-hint" style="margin-top:8px; margin-bottom:0;">Rest ${formatGermanNumber(result.remainder)} kg pro Seite lässt sich mit den verfügbaren Scheiben nicht exakt abbilden.</div>` : ''}
-    `;
-  };
-  document.getElementById('plateCalcSubmit').onclick = runPlateCalc;
-  plateInput.onkeydown = (ev) => {
-    if (ev.key === 'Enter'){ ev.preventDefault(); plateInput.blur(); runPlateCalc(); }
-  };
+  if (plateInput && plateResult){
+    const runPlateCalc = () => {
+      const weight = parseGermanNumber(plateInput.value);
+      if (!plateInput.value || isNaN(weight) || weight <= 0){
+        plateResult.innerHTML = `<div class="tools-section-hint">Bitte ein gültiges Gewicht eingeben.</div>`;
+        return;
+      }
+      const result = calcPlatesPerSide(weight);
+      if (!result || !result.plates.length){
+        plateResult.innerHTML = `<div class="tools-section-hint">Gewicht liegt unter dem Stangengewicht (${formatGermanNumber(barWeightKg())}kg) oder lässt sich nicht abbilden.</div>`;
+        return;
+      }
+      plateResult.innerHTML = `
+        <div class="plate-result-side">Pro Seite:</div>
+        ${result.plates.map(p => `
+          <div class="plate-result-row">
+            <span>${formatGermanNumber(p.size)} kg</span>
+            <span>× ${p.count}</span>
+          </div>
+        `).join('')}
+        ${result.remainder > 0 ? `<div class="tools-section-hint" style="margin-top:8px; margin-bottom:0;">Rest ${formatGermanNumber(result.remainder)} kg pro Seite lässt sich mit den verfügbaren Scheiben nicht exakt abbilden.</div>` : ''}
+      `;
+    };
+    document.getElementById('plateCalcSubmit').onclick = runPlateCalc;
+    plateInput.onkeydown = (ev) => {
+      if (ev.key === 'Enter'){ ev.preventDefault(); plateInput.blur(); runPlateCalc(); }
+    };
+  }
 }
 
 function openResetConfirmPrompt(onConfirm){
@@ -4245,6 +4459,20 @@ function monthOverviewBlockHTML(year, month){
     subtitle += ` · ${perWeek} pro Woche`;
   }
 
+  // Warm-up-Sätze (set.warmup=true, siehe Trainingstools-Popup) und Deload-Einheiten
+  // (session.deloadUsed, siehe endSession()) für diesen Monat zusammengezählt — nur
+  // angezeigt, wenn im Monat tatsächlich mindestens eins von beidem vorkam.
+  const monthSessions = sessions.filter(s => {
+    const sd = new Date(s.date);
+    return sd.getFullYear() === year && sd.getMonth() === month;
+  });
+  const monthWarmupCount = monthSessions.reduce((sum, s) => sum + (s.entries || []).reduce((esum, e) => esum + (e.sets || []).filter(st => st.warmup).length, 0), 0);
+  const monthDeloadCount = monthSessions.filter(s => s.deloadUsed).length;
+  const trackingParts = [];
+  if (monthWarmupCount > 0) trackingParts.push(`${monthWarmupCount} Warm-up${monthWarmupCount === 1 ? '' : 's'}`);
+  if (monthDeloadCount > 0) trackingParts.push(`${monthDeloadCount} Deload${monthDeloadCount === 1 ? '' : 's'}`);
+  const trackingSubtitle = trackingParts.length ? `<p class="month-overview-subtitle month-overview-tracking-subtitle">${trackingParts.join(' · ')}</p>` : '';
+
   const now = new Date();
   const titleYear = year !== now.getFullYear() ? ` ${year}` : '';
 
@@ -4280,6 +4508,7 @@ function monthOverviewBlockHTML(year, month){
     <div class="month-overview-block">
       <h2 class="month-overview-title">${MONTH_NAMES_DE[month]}${titleYear}</h2>
       <p class="month-overview-subtitle">${subtitle}</p>
+      ${trackingSubtitle}
       <div class="month-overview-grid">
         ${dayLabels}
         ${blanks}
@@ -9807,6 +10036,11 @@ function renderSettings(){
       </button>
     </div>
 
+    <div class="muscle-group-header settings-static-row" style="margin-top:10px;">
+      <span class="mg-name">Stangengewicht</span>
+      <input type="text" inputmode="decimal" class="settings-row-input" id="barWeightSettingsInput" enterkeyhint="done" placeholder="kg" value="${formatGermanNumber(barWeightKg())}">
+    </div>
+
     <div class="section-label">Daten</div>
     <div class="muscle-group-header settings-static-row" style="margin-top:0;">
       <div class="settings-row-btns" style="width:100%;">
@@ -9916,6 +10150,21 @@ function renderSettings(){
     await saveJSON('plan', plan);
     renderSettings();
   };
+
+  const barWeightSettingsInputEl = document.getElementById('barWeightSettingsInput');
+  if (barWeightSettingsInputEl){
+    const saveBarWeightSettings = async () => {
+      const val = parseGermanNumber(barWeightSettingsInputEl.value);
+      plan.barWeightKg = (barWeightSettingsInputEl.value && !isNaN(val) && val >= 0) ? val : BAR_WEIGHT_KG_DEFAULT;
+      await saveJSON('plan', plan);
+      barWeightSettingsInputEl.value = formatGermanNumber(barWeightKg());
+    };
+    barWeightSettingsInputEl.onkeydown = (ev) => {
+      if (ev.key === 'Enter'){ ev.preventDefault(); barWeightSettingsInputEl.blur(); }
+    };
+    barWeightSettingsInputEl.onchange = saveBarWeightSettings;
+  }
+
 
   const bodyWeightInputEl = document.getElementById('bodyWeightInput');
   if (bodyWeightInputEl){
@@ -12214,6 +12463,11 @@ async function endSession(){
     // nicht für die Split-Rotation.
     mode: active.mode || null,
     modeVariant: active.modeVariant || null,
+    // Deload-Kennzeichnung für die Monatsübersicht (siehe renderMonthOverview()) — ob der
+    // Deload-Schalter (Trainingstools) am Ende dieser Einheit aktiv war. Warm-up-Sätze
+    // brauchen dagegen KEIN eigenes Session-Feld: das set.warmup=true-Flag bleibt beim
+    // Filtern unten ohnehin an den Sätzen erhalten und lässt sich später direkt daraus zählen.
+    deloadUsed: !!active.deloadActive,
     entries: active.entries
       .map(e => ({
         exerciseId: e.exerciseId,
