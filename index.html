@@ -5887,6 +5887,7 @@ function resetAllAccordions(){
   statsChartOpen = new Set();
   exerciseProgressChartOpen = new Set();
   muscleBalanceDrilldown = null;
+  timeBalanceDrilldown = null;
 }
 
 // Rendert die zu einem State-Objekt ({ view, params }) gehörende Seite — genutzt vom
@@ -6505,6 +6506,7 @@ function renderStatsChart(metric){
     ${chartAccordionHTML(statsChartOpen, 'main', title, chartPoints, color, formatter, buildLineChart(chartPoints, color, formatter))}
     ${widgetHTML}
     ${groupChartsHTML ? `<div class="section-label" style="margin-top:18px;">Nach Muskelgruppe</div>${groupChartsHTML}` : ''}
+    ${isTime ? timeDonutSectionHTML(statsPeriodToDays(statsPeriod)) : ''}
   `;
 
   document.getElementById('btnBack').onclick = () => history.back();
@@ -6524,6 +6526,7 @@ function renderStatsChart(metric){
       renderStatsChart(metric);
     };
   });
+  if (isTime) wireTimeDonutSection(statsPeriodToDays(statsPeriod));
 }
 
 /* ---------------------------------------------------
@@ -7393,6 +7396,46 @@ function computeMuscleGroupVolumeSums(periodDays){
   });
   return sums;
 }
+// Getrackte Übungszeit (siehe accrueExerciseTime()/timeSpentSec) je Muskelgruppe — anders als
+// computeMuscleGroupSetCounts()/-VolumeSums() wird Kardio hier NICHT ausgeschlossen, da auch
+// Kardio-Geräte reale Zeit auf dem Bildschirm brauchen und für "wo geht meine Trainingszeit
+// hin" genauso zählen wie Kraftübungen.
+function computeMuscleGroupTimeSums(periodDays){
+  const cutoff = periodDays ? Date.now() - periodDays * 86400000 : null;
+  const sums = {};
+  sessions.forEach(s => {
+    if (cutoff && new Date(s.date).getTime() < cutoff) return;
+    s.entries.forEach(e => {
+      const sec = e.timeSpentSec || 0;
+      if (!sec) return;
+      const planEx = plan.exercises.find(x => x.id === e.exerciseId);
+      const g = (planEx && planEx.muscleGroup) || 'Sonstige';
+      sums[g] = (sums[g] || 0) + sec;
+    });
+  });
+  return sums;
+}
+// Übungs-Aufschlüsselung für den Zeit-Donut (analog computeExerciseBreakdownForGroup(), aber
+// mit Gesamtzeit UND daraus abgeleitetem Durchschnitt pro Einheit, in der die Übung vorkam —
+// die eigentlich gewünschte Kennzahl "wie lange brauche ich im Schnitt für Übung X").
+function computeExerciseTimeBreakdownForGroup(group, periodDays){
+  const cutoff = periodDays ? Date.now() - periodDays * 86400000 : null;
+  const map = {};
+  sessions.forEach(s => {
+    if (cutoff && new Date(s.date).getTime() < cutoff) return;
+    s.entries.forEach(e => {
+      const sec = e.timeSpentSec || 0;
+      if (!sec) return;
+      const planEx = plan.exercises.find(x => x.id === e.exerciseId);
+      const g = (planEx && planEx.muscleGroup) || 'Sonstige';
+      if (g !== group) return;
+      if (!map[e.name]) map[e.name] = { name: e.name, totalSec: 0, count: 0 };
+      map[e.name].totalSec += sec;
+      map[e.name].count += 1;
+    });
+  });
+  return Object.values(map).map(m => ({ ...m, avgSec: m.count ? Math.round(m.totalSec / m.count) : 0 }));
+}
 // Muskelgruppen, in denen mindestens eine geloggte Übung überhaupt ein Gewichtsfeld hatte
 // (also weder ein reiner Zeit-Satz wie Plank noch eine noWeight-Übung wie Situps war) — nur
 // für diese Gruppen wird in der Legende "· X kg" mitangezeigt. Bei reinen Eigenkörpergewichts-
@@ -7625,6 +7668,187 @@ function renderMuscleBalance(){
   // durch einen Farbwechsel während eine Muskelgruppe gerade aufgeklappt ist) — ohne diesen
   // Aufruf bliebe der Donut nach so einem Neuaufbau wieder im unausgewählten Ausgangszustand.
   applyMuscleDonutSelection();
+}
+
+// Analog zu muscleBalanceDrilldown, aber ohne "metric" — hier gibt es nur EIN Diagramm
+// (Zeit), daher reicht die Muskelgruppe allein als Auswahlzustand.
+let timeBalanceDrilldown = null;
+let timeBalanceOutsideClickHandler = null;
+function fmtDurationCompact(sec){
+  return sec >= 60 ? fmtDuration(sec) : `${sec}s`;
+}
+// Wandelt den Zeitraum-Wert des "Trainingszeit"-Screens (statsPeriod: 'month'/'year'/'total',
+// dieselben Buttons wie beim Liniendiagramm oben auf dem Screen) in einen Cutoff in Tagen um —
+// der Muskelgruppen-Zeit-Donut teilt sich bewusst DENSELBEN Zeitraum-Filter statt eigener
+// 30/90-Tage-Buttons, damit auf dem Screen nur EIN Zeitraum-Konzept existiert.
+function statsPeriodToDays(period){
+  if (period === 'month') return 30;
+  if (period === 'year') return 365;
+  return null; // 'total'
+}
+// Baut die Muskelgruppen-Zeit-Donut-Sektion (Diagramm + Legende + Übungs-Übersicht) als
+// zusätzliche Anzeige INNERHALB von renderStatsChart('time') — nutzt exakt dieselbe Donut-/
+// Drilldown-Mechanik wie renderMuscleBalance() (buildInteractiveDonut, donutAngleRanges,
+// shadeMuscleColor, Ein-/Ausgrauen bei Auswahl, Übungs-Übersicht darunter), aber ohne eigenen
+// Zeitraum-Filter (siehe statsPeriodToDays() oben) und ohne eigenen Screen/Zurück-Button, da
+// sie Teil des bestehenden Trainingszeit-Screens ist, dessen andere Diagramme unverändert
+// erhalten bleiben.
+function timeDonutSectionHTML(periodDays){
+  const sums = computeMuscleGroupTimeSums(periodDays);
+  const totalSec = Object.values(sums).reduce((a,v) => a+v, 0);
+  const groups = MUSCLE_GROUP_ORDER.filter(g => sums[g]);
+  Object.keys(sums).forEach(g => { if (!groups.includes(g)) groups.push(g); }); // z.B. "Sonstige"
+  const segments = groups.map(g => ({ label: g, value: sums[g], color: muscleGroupColor(g) }));
+
+  const legendHTML = groups.map(g => {
+    const pct = totalSec ? Math.round(sums[g] / totalSec * 100) : 0;
+    return `
+    <div class="muscle-balance-legend-row">
+      <button class="muscle-balance-swatch" data-mg-color="${g}" style="color:${muscleGroupColor(g)};" aria-label="Farbe für ${g} ändern (aktuell ${pct}% der Trainingszeit)">${pct}%</button>
+      <span class="muscle-balance-legend-label">${g}</span>
+      <div class="muscle-balance-legend-values">
+        <span class="muscle-balance-legend-value">${fmtDurationCompact(sums[g])}</span>
+      </div>
+    </div>
+  `;
+  }).join('');
+
+  return `
+    <div class="section-label" style="margin-top:18px;">Nach Muskelgruppe (Zeit)</div>
+    <div class="muscle-balance-charts-row">
+      <div class="muscle-balance-chart-col" style="margin:0 auto;">
+        <div class="muscle-balance-chart-wrap">${buildInteractiveDonut(segments, 170, 'time', fmtDurationCompact(totalSec), 'Zeit')}</div>
+        ${!totalSec ? '<div class="history-empty">Noch keine Daten.</div>' : ''}
+      </div>
+    </div>
+    <div class="muscle-balance-breakdown" id="exerciseBreakdown" style="display:none;">
+      <div class="muscle-balance-breakdown-header">
+        <span class="muscle-balance-breakdown-title" id="breakdownTitle"></span>
+        <button class="muscle-balance-breakdown-close" id="breakdownClose" aria-label="Übungs-Übersicht schließen">✕</button>
+      </div>
+      <div class="muscle-balance-legend" id="breakdownList"></div>
+    </div>
+    <div class="muscle-balance-legend" id="mainLegend" style="margin-top:16px;">${legendHTML}</div>
+  `;
+}
+// Bindet die Interaktion der obigen Sektion — wird von renderStatsChart('time') NACH dem
+// Setzen von app.innerHTML aufgerufen, "onPeriodChanged" ist dabei einfach ein erneuter Aufruf
+// von renderStatsChart('time') (gleiches Muster wie die period-btn-Handler dort), da der
+// Zeitraum jetzt gemeinsam mit dem Liniendiagramm oben gesteuert wird.
+function wireTimeDonutSection(periodDays, rerender){
+  const sums = computeMuscleGroupTimeSums(periodDays);
+  const totalSec = Object.values(sums).reduce((a,v) => a+v, 0);
+  const groups = MUSCLE_GROUP_ORDER.filter(g => sums[g]);
+  Object.keys(sums).forEach(g => { if (!groups.includes(g)) groups.push(g); });
+  const segments = groups.map(g => ({ label: g, value: sums[g], color: muscleGroupColor(g) }));
+
+  function toggleTimeDonutSelection(group){
+    timeBalanceDrilldown = (timeBalanceDrilldown === group) ? null : group;
+    applyTimeDonutSelection();
+  }
+
+  function applyTimeDonutSelection(){
+    const svg = document.getElementById('donutSvg-time');
+    if (!svg) return;
+    const ranges = donutAngleRanges(segments);
+    const selected = timeBalanceDrilldown;
+
+    svg.querySelectorAll('.donut-subseg').forEach(el => el.remove());
+    ranges.forEach(r => {
+      const path = Array.from(svg.querySelectorAll('.donut-seg:not(.donut-subseg)')).find(p => p.dataset.group === r.label);
+      if (!path) return;
+      path.classList.toggle('donut-seg-hidden', selected === r.label);
+      path.classList.toggle('donut-seg-dim', !!selected && selected !== r.label);
+    });
+
+    const defaultCenter = document.getElementById('pieCenterDefault-time');
+    const selectedCenter = document.getElementById('pieCenterSelected-time');
+    if (defaultCenter) defaultCenter.classList.toggle('pie-center-hidden', !!selected);
+    if (selectedCenter) selectedCenter.classList.toggle('pie-center-hidden', !selected);
+    const mainLegend = document.getElementById('mainLegend');
+    if (mainLegend) mainLegend.classList.toggle('dimmed', !!selected);
+
+    const panel = document.getElementById('exerciseBreakdown');
+    if (!selected){
+      if (panel) panel.classList.remove('open');
+      setTimeout(() => { if (!timeBalanceDrilldown && panel) panel.style.display = 'none'; }, 250);
+      return;
+    }
+    const range = ranges.find(r => r.label === selected);
+    if (!range) return;
+
+    // Sortiert nach GESAMTZEIT (wie die anderen Donuts), die Übungs-Übersicht selbst zeigt
+    // pro Zeile zusätzlich die DURCHSCHNITTLICHE Dauer je Einheit (die eigentlich gewünschte
+    // Kennzahl "wie lange brauche ich im Schnitt für Übung X").
+    const breakdown = computeExerciseTimeBreakdownForGroup(selected, periodDays)
+      .filter(e => e.totalSec > 0)
+      .sort((a,b) => b.totalSec - a.totalSec);
+    const subTotal = breakdown.reduce((a,e) => a + e.totalSec, 0);
+    let a = range.startAngle;
+    const gapDeg = breakdown.length > 1 ? 1.4 : 0;
+    breakdown.forEach((ex, i) => {
+      const fraction = subTotal ? ex.totalSec / subTotal : 0;
+      const rawEnd = a + fraction * (range.endAngle - range.startAngle);
+      const startA = a + (i > 0 ? gapDeg/2 : 0);
+      const endA = rawEnd - (i < breakdown.length - 1 ? gapDeg/2 : 0);
+      a = rawEnd;
+      const subPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      subPath.setAttribute('d', donutArcPath(startA, endA));
+      subPath.setAttribute('fill', shadeMuscleColor(range.color, i));
+      subPath.setAttribute('class', 'donut-seg donut-subseg');
+      subPath.style.transitionDelay = (i * 35) + 'ms';
+      subPath.onclick = () => toggleTimeDonutSelection(selected);
+      svg.appendChild(subPath);
+    });
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      svg.querySelectorAll('.donut-subseg').forEach(el => el.classList.add('donut-subseg-in'));
+    }));
+
+    const selValueEl = document.getElementById('pieCenterSelectedValue-time');
+    const selLabelEl = document.getElementById('pieCenterSelectedLabel-time');
+    if (selValueEl && selLabelEl){
+      const pct = totalSec ? Math.round(range.value / totalSec * 100) : 0;
+      selValueEl.textContent = pct + '%';
+      selLabelEl.textContent = selected;
+    }
+
+    const rows = breakdown.map((ex, i) => {
+      const pct = subTotal ? Math.round(ex.totalSec / subTotal * 100) : 0;
+      return `
+        <div class="muscle-balance-legend-row">
+          <span class="muscle-balance-swatch-static" style="color:${shadeMuscleColor(range.color, i)};">${pct}%</span>
+          <span class="muscle-balance-legend-label">${exerciseNameHTML(ex.name)}</span>
+          <span class="muscle-balance-legend-value">Ø ${fmtDurationCompact(ex.avgSec)} · ${ex.count}x</span>
+        </div>
+      `;
+    }).join('');
+    document.getElementById('breakdownTitle').textContent = `${selected} – nach Übungen (Zeit)`;
+    document.getElementById('breakdownList').innerHTML = rows || '<div class="history-empty">Keine Daten.</div>';
+    if (panel){
+      panel.style.display = 'block';
+      requestAnimationFrame(() => requestAnimationFrame(() => panel.classList.add('open')));
+    }
+  }
+
+  app.querySelectorAll('[data-mg-color]').forEach(btn => {
+    btn.onclick = () => openMuscleGroupColorPicker(btn.dataset.mgColor);
+  });
+  app.querySelectorAll('.donut-seg[data-metric="time"]').forEach(path => {
+    path.onclick = () => toggleTimeDonutSelection(path.dataset.group);
+  });
+  const breakdownCloseBtn = document.getElementById('breakdownClose');
+  if (breakdownCloseBtn) breakdownCloseBtn.onclick = () => { timeBalanceDrilldown = null; applyTimeDonutSelection(); };
+
+  if (timeBalanceOutsideClickHandler) document.removeEventListener('click', timeBalanceOutsideClickHandler, true);
+  timeBalanceOutsideClickHandler = (ev) => {
+    if (!timeBalanceDrilldown) return;
+    if (ev.target.closest('#exerciseBreakdown, .donut-seg, .muscle-balance-legend-row, [data-mg-color]')) return;
+    timeBalanceDrilldown = null;
+    applyTimeDonutSelection();
+  };
+  document.addEventListener('click', timeBalanceOutsideClickHandler, true);
+
+  applyTimeDonutSelection();
 }
 
 function renderProgressList(){
@@ -12200,7 +12424,16 @@ function toggleSessionPause(){
   if (active.pausedAt){
     active.startedAt += Date.now() - active.pausedAt;
     active.pausedAt = null;
+    // Übungs-Zeittracking (siehe accrueExerciseTime()) nutzt dieselbe Uhr — beim Fortsetzen
+    // den Startpunkt der aktuell offenen Übung auf JETZT vorziehen, sonst würde die Pausen-
+    // dauer selbst versehentlich als "Übung geöffnet" mitgezählt.
+    active.timeTrackOpenedAt = Date.now();
   } else {
+    // Vor dem Pausieren die bis hierhin vergangene Zeit der offenen Übung noch einbuchen
+    // (accrueExerciseTime() selbst würde ab jetzt dank active.pausedAt ohnehin nicht mehr
+    // weiterzählen, aber ohne diesen Aufruf bliebe die Zeit bis zum Pausieren ungespeichert,
+    // bis der nächste renderActive()-Aufruf zufällig danach kommt).
+    accrueExerciseTime();
     active.pausedAt = Date.now();
   }
   persistActiveSession();
@@ -12942,7 +13175,41 @@ function wireThumbDrag(){
   });
 }
 
+// Trackt, wie lange eine Übung tatsächlich GEÖFFNET war (also gerade auf dem Bildschirm zu
+// sehen ist), bis alle ihre Sätze abgehakt sind — Basis für die Zeit-Statistik je Übung/
+// Muskelgruppe (siehe computeMuscleGroupTimeSums()/renderExerciseTimeBalance()). Läuft
+// zentral bei JEDEM renderActive()-Aufruf: vergleicht den zuletzt getrackten Index
+// (active.timeTrackCurrentIndex) mit dem AKTUELLEN active.currentIndex (der von der
+// aufrufenden Stelle meist schon VOR renderActive() neu gesetzt wurde) und schreibt die
+// seit dem letzten Aufruf vergangene Zeit der bis dahin offenen Übung gut — dadurch muss
+// nicht jede einzelne Stelle im Code, die active.currentIndex ändert (Kachel-Tap, Supersatz-
+// Weiterschalten, Drag-Umsortierung, Übung hinzufügen/entfernen …), einzeln instrumentiert
+// werden. Bei Supersätzen zählt so automatisch NUR die Zeit, in der genau diese Übung gerade
+// angezeigt wurde, nicht die des Partners. Zählt NICHT weiter, sobald die Übung beim ÖFFNEN
+// bereits fertig war (erneutes Betrachten einer abgehakten Übung soll keine Zeit addieren).
+// Pausen (active.pausedAt) werden über denselben "now"-Mechanismus wie die Trainingszeit
+// selbst ausgeklammert — WICHTIG: toggleSessionPause() muss dafür beim Start einer Pause
+// diese Funktion selbst aufrufen (Zeit bis zur Pause einbuchen) und beim Fortsetzen
+// active.timeTrackOpenedAt neu auf "jetzt" setzen, siehe dort.
+function accrueExerciseTime(){
+  if (!active || !Array.isArray(active.entries)) return;
+  const now = active.pausedAt || Date.now();
+  if (active.timeTrackOpenedAt != null && active.timeTrackCurrentIndex != null){
+    const openEntry = active.entries[active.timeTrackCurrentIndex];
+    if (openEntry && !active.timeTrackWasDoneAtOpen){
+      const elapsedSec = Math.max(0, Math.round((now - active.timeTrackOpenedAt) / 1000));
+      openEntry._timeSpentSec = (openEntry._timeSpentSec || 0) + elapsedSec;
+    }
+  }
+  if (active.timeTrackCurrentIndex !== active.currentIndex){
+    active.timeTrackCurrentIndex = active.currentIndex;
+    const newEntry = active.entries[active.currentIndex];
+    active.timeTrackWasDoneAtOpen = newEntry ? isEntryDone(newEntry) : true;
+  }
+  active.timeTrackOpenedAt = now;
+}
 function renderActive(){
+  accrueExerciseTime();
   persistActiveSession();
   // Der Übungs-Bilderleiste (.thumb-strip) wird bei JEDEM renderActive() komplett neu aus dem
   // Template gebaut (app.innerHTML = ...) — ein frisches DOM-Element hat scrollLeft standardmäßig
@@ -13338,7 +13605,23 @@ function renderActive(){
         input.onkeydown = (ev) => {
           if (ev.key === 'Enter'){
             ev.preventDefault();
-            input.blur(); // löst onchange aus und schließt die virtuelle Tastatur
+            // Statt immer nur die Tastatur zu schließen: springt zum NÄCHSTEN Eingabefeld
+            // derselben Zeile (z. B. kg → Wdh), aber NUR wenn dieses noch leer ist — steht
+            // dort schon ein Wert (z. B. aus der Übernahme vom vorherigen Satz), bleibt
+            // "Bestätigen" wie gewohnt beim Schließen der Tastatur (kein ungewolltes
+            // Überspringen eines bereits ausgefüllten Feldes). input.blur() löst über den
+            // bestehenden onchange-Handler renderActive() aus, das die komplette Sätze-Liste
+            // neu aufbaut — das Zielfeld muss deshalb ERST NACH diesem Neuaufbau frisch aus
+            // dem DOM geholt werden, ein vorher gemerkter Knoten wäre danach bereits verwaist.
+            const fieldsInRow = Array.from(row.querySelectorAll('input[data-field]'));
+            const idx = fieldsInRow.indexOf(input);
+            const nextInput = fieldsInRow[idx + 1];
+            const nextField = (nextInput && nextInput.value === '' && !nextInput.disabled) ? nextInput.dataset.field : null;
+            input.blur(); // löst onchange aus (Wert übernehmen, speichern, neu rendern)
+            if (nextField){
+              const freshNext = document.querySelector(`#currentSets input[data-field="${nextField}"][data-si="${si}"]`);
+              if (freshNext) freshNext.focus();
+            }
           }
         };
         input.onchange = () => {
@@ -13923,6 +14206,7 @@ function openIncompleteSetsPrompt(problems, proceedFn){
 
 
 async function endSession(){
+  accrueExerciseTime(); // letzte offene Übung bis zum Beenden noch einbuchen
   clearInterval(timerHandle);
   clearInterval(restInterval);
   restState = null;
@@ -13953,7 +14237,10 @@ async function endSession(){
         // abgehakter Satz ganz ohne jeden Wert (z. B. nur durch Auto-Vorausfüllen entstanden,
         // aber nie wirklich ausgeführt) gilt genauso als nicht existent wie ein nicht
         // abgehakter Satz, statt mit leeren Bindestrichen gespeichert zu werden.
-        sets: e.sets.filter(s => s.done === true && Object.entries(s).some(([k,v]) => k !== 'done' && v !== null && v !== undefined && v !== ''))
+        sets: e.sets.filter(s => s.done === true && Object.entries(s).some(([k,v]) => k !== 'done' && v !== null && v !== undefined && v !== '')),
+        // Wie lange die Übung insgesamt GEÖFFNET war, bis alle Sätze abgehakt waren (siehe
+        // accrueExerciseTime()) — Basis für die Zeit-Statistik je Übung/Muskelgruppe.
+        timeSpentSec: e._timeSpentSec || 0
       }))
       // Übungen ganz ohne verbliebene Sätze gelten als nicht durchgeführt
       // und werden komplett verworfen (erscheinen nicht in Zusammenfassung/PDF).
