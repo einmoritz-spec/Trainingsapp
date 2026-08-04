@@ -1432,7 +1432,7 @@ html[data-theme="light"] .bodyweight-warning-icon{ filter: none; }
    zwischen den Zeilen, letzte Zeile einer Gruppe ohne Linie. Sehr knappes vertikales Padding,
    damit die Liste insgesamt kompakt wirkt (kein Leerraum über/unter den Bildern).*/
 .plan-row{
-  display:flex; align-items:center; gap:12px;
+  display:flex; align-items:center; gap:8px;
   padding:10px 16px; border-bottom:1px solid var(--border);
 }
 .plan-row:last-child{ border-bottom:none; }
@@ -1444,8 +1444,9 @@ html[data-theme="light"] .bodyweight-warning-icon{ filter: none; }
   font-family:'JetBrains Mono', monospace; font-weight:700; font-size:11px; color: var(--text);
 }
 .plan-row-name{
-  flex:1; min-width:0; font-size:15px; font-weight:600; color: var(--text);
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  flex:1; min-width:0; font-size:13px; font-weight:600; color: var(--text);
+  line-height:1.25; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+  overflow:hidden; text-overflow:ellipsis;
 }
 /* Kleiner, dezenter Zusatztext hinter "Adduktoren"/"Abduktoren" (siehe exerciseNameHTML()) —
    em-basierte Schriftgröße, damit er sich an jeder Stelle (Liste, Titel, Tabellenzelle etc.)
@@ -1467,6 +1468,16 @@ html[data-theme="light"] .plan-row-edit-btn img{ filter: none; }
   flex-shrink:0; background:none; border:none; padding:0; color: var(--accent);
   width:38px; height:38px; display:flex; align-items:center; justify-content:center;
 }
+/* Löschen-("Ausblenden")-Button, gleiche Größe/Optik wie .plan-row-edit-btn daneben, aber in
+   der Warnfarbe (--accent-2) — entfernt die Übung nicht endgültig, sondern nur aus dem
+   aktiven Plan (siehe hideExerciseFromPlan()), sie taucht danach im "Aus Vorlagen wählen"-
+   Picker wieder auf. */
+.plan-row-delete-btn{
+  flex-shrink:0; background: var(--surface-2); border:1px solid var(--border); color: var(--accent-2);
+  border-radius:8px; width:38px; height:38px; padding:0; font-size:16px; line-height:1;
+  display:flex; align-items:center; justify-content:center;
+}
+.plan-row-delete-btn:active{ background: var(--border); }
 
 
 /* ---------- Übungen-Bearbeiten-Popup (Detail-Felder einer einzelnen Übung) ---------- */
@@ -2422,6 +2433,305 @@ const EXERCISE_INFO = {
       'Rückweg in umgekehrter Reihenfolge: erst Arme, dann Oberkörper, dann Beine beugen',
       'Griff locker halten, nicht verkrampfen'
     ]
+  },
+
+  // ---- Ab hier: Übungs-Bibliothek (EXERCISE_LIBRARY, siehe unten) ----
+  e26: { // Kniebeuge (Langhantel)
+    desc: 'Freihantel-Grundübung für die gesamte Beinmuskulatur — die Langhantel liegt auf dem oberen Rücken, während in die Hocke gegangen wird.',
+    tips: [
+      'Füße etwa schulterbreit, Zehen leicht nach außen',
+      'Knie in Fußrichtung bewegen, nicht nach innen einknicken',
+      'Rücken die ganze Bewegung über gerade halten, Blick leicht nach vorne',
+      'Mindestens bis zur Parallele absenken, sofern die Beweglichkeit es zulässt'
+    ]
+  },
+  e27: { // Kreuzheben (Langhantel)
+    desc: 'Ganzkörper-Grundübung, bei der eine Langhantel vom Boden bis zum aufrechten Stand angehoben wird — trainiert vor allem Rücken, Gesäß und hintere Oberschenkelmuskulatur.',
+    tips: [
+      'Stange nah am Körper führen, fast an den Schienbeinen entlang',
+      'Rücken gerade halten, kein Rundrücken beim Anheben',
+      'Bewegung aus der Hüfte einleiten, nicht aus dem unteren Rücken',
+      'Am Ende Hüfte vollständig strecken, nicht überstrecken'
+    ]
+  },
+  e28: { // Rumänisches Kreuzheben
+    desc: 'Kreuzheben-Variante mit fast gestreckten Beinen — betont gezielt die hintere Oberschenkelmuskulatur (Hamstrings) und das Gesäß.',
+    tips: [
+      'Knie nur leicht gebeugt, Beugung während der Bewegung kaum verändern',
+      'Stange eng am Körper entlangführen',
+      'Rücken gerade halten, Bewegung kommt aus der Hüfte (Hüfte nach hinten schieben)',
+      'Nur so tief gehen, wie der Rücken gerade bleibt'
+    ]
+  },
+  e29: { // Sumo-Kreuzheben
+    desc: 'Kreuzheben-Variante mit breitem Stand und nach außen gedrehten Füßen — beansprucht neben dem Rücken stärker die Gesäß- und Oberschenkelinnenseite.',
+    tips: [
+      'Füße deutlich breiter als schulterbreit, Zehen nach außen gedreht',
+      'Griff innerhalb der Beine, Knie in Fußrichtung nach außen drücken',
+      'Rücken gerade halten, Oberkörper aufrechter als beim klassischen Kreuzheben',
+      'Kraft gleichmäßig aus Beinen und Hüfte aufbauen, nicht ruckartig ziehen'
+    ]
+  },
+  e30: { // Frontkniebeuge
+    desc: 'Kniebeuge-Variante mit der Langhantel vorne auf den Schultern — beansprucht den Quadrizeps noch stärker und fordert einen aufrechten Oberkörper.',
+    tips: [
+      'Stange auf den vorderen Schultern ablegen, Ellenbogen hoch halten',
+      'Oberkörper möglichst aufrecht halten',
+      'Knie in Fußrichtung bewegen, Fersen am Boden lassen',
+      'Kontrolliert absenken, kein Wippen am untersten Punkt'
+    ]
+  },
+  e31: { // Ausfallschritte (Kurzhanteln)
+    desc: 'Einbeinige Übung mit Kurzhanteln in den Händen — trainiert Quadrizeps, Gesäß und nebenbei die Balance.',
+    tips: [
+      'Großen Schritt nach vorne machen, Oberkörper aufrecht halten',
+      'Vorderes Knie über dem Fuß, nicht darüber hinausschieben',
+      'Hinteres Knie kontrolliert Richtung Boden absenken, ohne aufzusetzen',
+      'Aus der Ferse des vorderen Fußes wieder hochdrücken'
+    ]
+  },
+  e32: { // Bulgarian Split Squats
+    desc: 'Einbeiniger Ausfallschritt mit erhöhtem hinterem Fuß (z. B. auf einer Bank) — intensiviert die Belastung für Quadrizeps und Gesäß des vorderen Beins.',
+    tips: [
+      'Vorderen Fuß so weit nach vorne stellen, dass das Knie beim Absenken über dem Fuß bleibt',
+      'Oberkörper aufrecht bis leicht vorgebeugt halten',
+      'Kontrolliert absenken, bis der hintere Oberschenkel nahezu parallel zum Boden ist',
+      'Hauptsächlich über das vordere Bein hochdrücken'
+    ]
+  },
+  e33: { // Wadenheben stehend
+    desc: 'Isolationsübung für die Wadenmuskulatur — aus dem Stand wird auf die Fußballen gedrückt.',
+    tips: [
+      'Volle Bewegungsamplitude nutzen: unten spürbare Dehnung, oben ganz nach oben drücken',
+      'Kurz oben halten, bevor kontrolliert abgesenkt wird',
+      'Kein Wippen oder Schwungholen',
+      'Knie während der Bewegung leicht gestreckt, aber nicht durchgedrückt'
+    ]
+  },
+  e34: { // Hip Thrust
+    desc: 'Gezielte Übung für die Gesäßmuskulatur — die Hüfte wird mit aufliegenden Schulterblättern (z. B. an einer Bank) gegen eine Langhantel nach oben gedrückt.',
+    tips: [
+      'Schulterblätter fest an der Bankkante, Kinn leicht Richtung Brust',
+      'Hüfte ganz nach oben strecken, oben kurz die Gesäßmuskulatur anspannen',
+      'Füße hüftbreit, Knie zeigen in Fußrichtung',
+      'Kontrolliert absenken, ohne das Gewicht ganz abzusetzen'
+    ]
+  },
+  e35: { // Klimmzüge
+    desc: 'Freie Zugübung am Klimmzugstab mit dem eigenen Körpergewicht (optional mit Zusatzgewicht) — trainiert vor allem den Latissimus, unterstützt durch den Bizeps.',
+    tips: [
+      'Griffbreite etwas breiter als schulterbreit, Handrücken zeigen nach vorne',
+      'Zug über die Ellenbogen einleiten, Schulterblätter nach unten ziehen',
+      'Kinn bis über die Stange ziehen, dann kontrolliert wieder absenken',
+      'Körper ruhig führen, kein starkes Schwingen'
+    ]
+  },
+  e36: { // Enger Klimmzug / Chin-up
+    desc: 'Klimmzugvariante mit engem Griff und Handflächen zum Körper — beansprucht neben dem Latissimus stärker den Bizeps.',
+    tips: [
+      'Griff etwa schulterbreit, Handflächen zum eigenen Gesicht',
+      'Ellenbogen nah am Körper vorbeiführen',
+      'Kinn bis über die Stange ziehen',
+      'Kontrolliert absenken, unten die Arme fast ganz strecken'
+    ]
+  },
+  e37: { // Langhantelrudern vorgebeugt
+    desc: 'Freihantelübung für den gesamten Rücken — im vorgebeugten Stand wird die Langhantel zum Bauch gezogen.',
+    tips: [
+      'Oberkörper stabil vorgebeugt halten, Rücken gerade',
+      'Stange nah am Körper zum Bauch/unteren Brustbereich ziehen',
+      'Schulterblätter am Ende der Bewegung zusammenziehen',
+      'Kein Schwung durch Auf- und Abfedern des Oberkörpers'
+    ]
+  },
+  e38: { // Kurzhantelrudern einarmig
+    desc: 'Einarmige Rudervariante mit Kurzhantel, meist mit der freien Hand auf einer Bank abgestützt — trainiert gezielt eine Rückenseite.',
+    tips: [
+      'Rücken während der gesamten Bewegung gerade halten',
+      'Ellenbogen nah am Körper nach oben ziehen',
+      'Oben kurz die Schulterblätter zusammenziehen',
+      'Kontrolliert bis zur vollen Armstreckung absenken'
+    ]
+  },
+  e39: { // Shrugs
+    desc: 'Isolationsübung für die Trapezmuskulatur — die Schultern werden mit der Langhantel in den Händen gerade nach oben gezogen.',
+    tips: [
+      'Bewegung ist ein reines Hochziehen der Schultern, keine Rollbewegung',
+      'Arme während der ganzen Übung gestreckt lassen',
+      'Oben kurz halten und die Spannung spüren',
+      'Kontrolliert absenken, ohne das Gewicht fallen zu lassen'
+    ]
+  },
+  e40: { // Bankdrücken (Langhantel)
+    desc: 'Klassische Freihantel-Grundübung für die Brustmuskulatur — die Langhantel wird liegend auf der Bank vom Brustkorb weggedrückt.',
+    tips: [
+      'Schulterblätter zusammenziehen und auf der Bank fixieren',
+      'Stange kontrolliert bis zur Brust absenken, Ellenbogen nicht zu weit auffächern',
+      'Füße fest auf dem Boden für einen stabilen Stand',
+      'Beim Hochdrücken nicht die Schultern vom Bankkontakt lösen'
+    ]
+  },
+  e41: { // Kurzhantel-Bankdrücken
+    desc: 'Bankdrücken-Variante mit zwei Kurzhanteln — ermöglicht einen größeren Bewegungsspielraum und fordert zusätzlich die Stabilisation.',
+    tips: [
+      'Schulterblätter zusammenziehen und auf der Bank fixieren',
+      'Hanteln kontrolliert bis auf Brusthöhe absenken',
+      'Handgelenke gerade über den Ellenbogen halten',
+      'Beim Hochdrücken die Hanteln nicht zusammenschlagen lassen'
+    ]
+  },
+  e42: { // Schrägbankdrücken (Langhantel)
+    desc: 'Bankdrücken auf einer schräg gestellten Bank — verlagert den Fokus stärker auf den oberen Brustmuskel.',
+    tips: [
+      'Bankneigung moderat wählen (ca. 30–45°), nicht zu steil',
+      'Stange kontrolliert Richtung obere Brust absenken',
+      'Schulterblätter zusammenziehen und stabil halten',
+      'Ellenbogen nicht komplett durchdrücken'
+    ]
+  },
+  e43: { // Kurzhantel-Fliegende
+    desc: 'Isolationsübung für die Brustmuskulatur — mit leicht gebeugten Armen werden die Kurzhanteln in einer Bogenbewegung über der Brust zusammengeführt.',
+    tips: [
+      'Ellenbogen während der gesamten Bewegung leicht gebeugt lassen',
+      'Bewegung kommt aus der Schulter, nicht aus dem Ellenbogen',
+      'Nur so tief absenken, wie es die Schulter schmerzfrei zulässt',
+      'Oben die Hanteln nicht aneinanderschlagen, Spannung halten'
+    ]
+  },
+  e44: { // Liegestütze
+    desc: 'Klassische Eigengewichtsübung für die Brustmuskulatur, unterstützt durch Schultern und Trizeps.',
+    tips: [
+      'Körper von Kopf bis Ferse in einer geraden Linie halten',
+      'Ellenbogen in einem moderaten Winkel zum Körper führen, nicht komplett abspreizen',
+      'Brust kontrolliert Richtung Boden absenken',
+      'Bauch- und Gesäßmuskulatur während der Bewegung angespannt halten'
+    ]
+  },
+  e45: { // Schulterdrücken (Langhantel)
+    desc: 'Freihantel-Grundübung für die Schultermuskulatur — die Langhantel wird aus Schulterhöhe über den Kopf gedrückt.',
+    tips: [
+      'Rumpf während der Bewegung fest anspannen, kein Hohlkreuz',
+      'Stange auf möglichst geradem Weg über den Kopf drücken',
+      'Kopf leicht zurücknehmen, damit die Stange vorbeigeht, dann wieder gerade',
+      'Oben die Arme nicht ruckartig durchdrücken'
+    ]
+  },
+  e46: { // Kurzhantel-Schulterdrücken
+    desc: 'Schulterdrücken-Variante mit zwei Kurzhanteln, meist im Sitzen — ermöglicht einen natürlicheren Bewegungsweg als die Langhantel.',
+    tips: [
+      'Rücken an der Lehne, Rumpf stabil anspannen',
+      'Hanteln auf etwa Ohrenhöhe absenken, nicht tiefer als schmerzfrei',
+      'Kontrolliert nach oben drücken, ohne die Hanteln oben zusammenzuschlagen',
+      'Handgelenke gerade halten, nicht nach hinten abknicken'
+    ]
+  },
+  e47: { // Vorgebeugtes Seitheben
+    desc: 'Isolationsübung für die hintere Schulter — im vorgebeugten Stand werden die Kurzhanteln seitlich nach oben geführt.',
+    tips: [
+      'Oberkörper stabil vorgebeugt halten, Rücken gerade',
+      'Arme nur leicht gebeugt, Bewegung kommt aus der Schulter',
+      'Bis auf Schulterhöhe anheben, kein Schwung aus dem Rücken',
+      'Kontrolliert wieder absenken'
+    ]
+  },
+  e48: { // Face Pulls
+    desc: 'Kabelzugübung für die hintere Schulter und die Rotatorenmanschette — das Seil wird zum Gesicht gezogen, die Ellenbogen dabei nach außen geführt.',
+    tips: [
+      'Seil in Augen-/Stirnhöhe einstellen',
+      'Ellenbogen während des Zugs auf Schulterhöhe nach außen führen',
+      'Am Ende der Bewegung die Schulterblätter zusammenziehen',
+      'Leichtes bis moderates Gewicht wählen, saubere Ausführung vor Last'
+    ]
+  },
+  e49: { // Frontheben
+    desc: 'Isolationsübung für die vordere Schulter — die Kurzhantel(n) werden vor dem Körper bis auf Schulterhöhe angehoben.',
+    tips: [
+      'Arme nur leicht gebeugt, Bewegung kommt aus der Schulter',
+      'Nur bis auf Schulterhöhe anheben, nicht darüber hinaus',
+      'Kein Schwung aus dem unteren Rücken holen',
+      'Kontrolliert absenken'
+    ]
+  },
+  e50: { // Bizeps Curls Langhantel
+    desc: 'Klassische Freihantelübung für den Bizeps — die Langhantel wird im Stand angebeugt.',
+    tips: [
+      'Ellenbogen nah am Körper fixiert halten, nicht nach vorne wandern lassen',
+      'Kein Schwung aus dem Rücken oder den Beinen',
+      'Oben kurz anspannen, dann kontrolliert absenken',
+      'Handgelenke während der Bewegung gerade halten'
+    ]
+  },
+  e51: { // Bizeps Curls Kurzhantel
+    desc: 'Bizeps-Curl-Variante mit Kurzhanteln — ermöglicht eine Drehung des Unterarms (Supination) während der Bewegung.',
+    tips: [
+      'Ellenbogen nah am Körper fixiert halten',
+      'Handgelenk während des Hochziehens leicht nach außen drehen (kleiner Finger führt)',
+      'Kein Schwung aus dem Rücken holen',
+      'Kontrolliert absenken, unten die Arme fast ganz strecken'
+    ]
+  },
+  e52: { // Hammer Curls
+    desc: 'Curl-Variante mit neutralem Griff (Handflächen zeigen zueinander) — beansprucht neben dem Bizeps auch den Unterarm.',
+    tips: [
+      'Handflächen zeigen während der gesamten Bewegung zueinander',
+      'Ellenbogen nah am Körper fixiert halten',
+      'Kein Schwung aus dem Rücken oder den Schultern',
+      'Kontrolliert absenken'
+    ]
+  },
+  e53: { // Trizeps Dips (Bank)
+    desc: 'Eigengewichtsübung für den Trizeps — mit den Händen auf einer Bank abgestützt wird der Körper abgesenkt und wieder hochgedrückt.',
+    tips: [
+      'Hände direkt unter den Schultern auf der Bankkante platzieren',
+      'Ellenbogen zeigen nach hinten, nicht nach außen',
+      'Nur so tief absenken, wie die Schulter es schmerzfrei zulässt',
+      'Für mehr Widerstand die Füße weiter vom Körper wegstellen'
+    ]
+  },
+  e54: { // Trizeps Kickback
+    desc: 'Isolationsübung für den Trizeps — im vorgebeugten Stand wird der Unterarm mit der Kurzhantel nach hinten gestreckt.',
+    tips: [
+      'Oberarm während der gesamten Bewegung parallel zum Boden und ruhig halten',
+      'Nur der Unterarm bewegt sich, Ellenbogen bleibt fixiert',
+      'Am Ende der Bewegung kurz anspannen',
+      'Leichtes Gewicht wählen, da die Hebelwirkung hier besonders groß ist'
+    ]
+  },
+  e55: { // Crunches
+    desc: 'Klassische Übung für die gerade Bauchmuskulatur — der Oberkörper wird aus der Rückenlage nur leicht Richtung Knie eingerollt.',
+    tips: [
+      'Unteren Rücken während der Bewegung am Boden lassen',
+      'Bewegung kommt aus dem Einrollen des Oberkörpers, nicht aus dem Nacken ziehen',
+      'Nur so weit hochkommen, wie die Schulterblätter den Boden verlassen',
+      'Ruhig weiteratmen, Luft nicht anhalten'
+    ]
+  },
+  e56: { // Bizeps Curls Kabelturm (einarmig)
+    desc: 'Einarmige Curl-Variante am Kabelturm — der konstante Zug des Seils sorgt für gleichmäßige Spannung im Bizeps über die gesamte Bewegung.',
+    tips: [
+      'Ellenbogen nah am Körper fixiert halten, nicht nach vorne wandern lassen',
+      'Oberkörper stabil halten, kein Ausweichen zur Gegenseite',
+      'Oben kurz anspannen, dann kontrolliert absenken',
+      'Gewicht so wählen, dass die andere Körperhälfte ruhig bleibt'
+    ]
+  },
+  e57: { // Trizeps Extension Kabelturm (einarmig)
+    desc: 'Einarmige Trizeps-Isolationsübung am Kabelturm — der Unterarm wird gegen den Widerstand des Seils gestreckt.',
+    tips: [
+      'Oberarm während der Bewegung ruhig und nah am Körper halten',
+      'Nur der Unterarm bewegt sich, Ellenbogen bleibt fixiert',
+      'Am unteren Punkt kurz anspannen',
+      'Kontrolliert wieder in die Ausgangsposition zurückführen'
+    ]
+  },
+  e58: { // Trizeps Extension Kabelturm (zweiarmig)
+    desc: 'Beidarmige Trizeps-Isolationsübung am Kabelturm, meist mit Stange oder Seil — der Unterarm wird gegen den Widerstand nach unten gestreckt.',
+    tips: [
+      'Oberarme während der Bewegung ruhig am Oberkörper fixiert halten',
+      'Nur die Unterarme bewegen sich, Ellenbogen bleiben fixiert',
+      'Unten kurz anspannen, ohne die Ellenbogen durchzudrücken',
+      'Kontrolliert wieder nach oben führen, Spannung dabei halten'
+    ]
   }
 };
 
@@ -2488,6 +2798,49 @@ const DEFAULT_PLAN = {
     }
   }
 };
+
+// Übungs-Bibliothek: zusätzliche Übungen (v.a. Freihantel-/Eigengewichtsvarianten), die NICHT
+// automatisch in plan.exercises landen (anders als DEFAULT_PLAN.exercises, siehe init()) —
+// sie bleiben "unsichtbar" im Hintergrund, bis eine Person sie aktiv über den "Aus Vorlagen
+// wählen"-Picker im Übungen-hinzufügen-Dialog auswählt (siehe openExerciseLibraryPicker()).
+// Gleiches Feld-Schema wie DEFAULT_PLAN.exercises, bewusst ohne imageData (kein Bild vorhanden,
+// die App zeigt dann den üblichen Initialen-Platzhalter) — passende EXERCISE_INFO-Einträge
+// (Kurzbeschreibung + "Worauf achten") liegen weiter oben unter denselben IDs.
+const EXERCISE_LIBRARY = [
+  { id: 'e26', name: 'Kniebeuge (Langhantel)',        sets: 3, repsMin: 6,  repsMax: 10, weight: 0, category: 'unterkoerper', muscleGroup: 'Beine',    muscles: 'Quadrizeps, Gesäßmuskulatur, unterer Rücken stabilisierend', type: 'reps', bodyPart: 'legs', mainMuscle: 'Quadrizeps' },
+  { id: 'e27', name: 'Kreuzheben (Langhantel)',       sets: 3, repsMin: 5,  repsMax: 8,  weight: 0, category: 'oberkoerper', muscleGroup: 'Rücken',   muscles: 'Unterer Rücken, Gesäßmuskulatur, ischiocrurale Muskulatur', type: 'reps', bodyPart: 'pull', mainMuscle: 'Rückenstrecker' },
+  { id: 'e28', name: 'Rumänisches Kreuzheben',        sets: 3, repsMin: 8,  repsMax: 12, weight: 0, category: 'unterkoerper', muscleGroup: 'Beine',    muscles: 'Ischiocrurale Muskulatur (Hamstrings), Gesäßmuskulatur', type: 'reps', bodyPart: 'legs', mainMuscle: 'Ischiocrurale Muskulatur' },
+  { id: 'e29', name: 'Sumo-Kreuzheben',                sets: 3, repsMin: 5,  repsMax: 8,  weight: 0, category: 'oberkoerper', muscleGroup: 'Rücken',   muscles: 'Gesäßmuskulatur, Oberschenkelinnenseite, unterer Rücken', type: 'reps', bodyPart: 'pull', mainMuscle: 'Gesäßmuskulatur' },
+  { id: 'e30', name: 'Frontkniebeuge',                 sets: 3, repsMin: 6,  repsMax: 10, weight: 0, category: 'unterkoerper', muscleGroup: 'Beine',    muscles: 'Quadrizeps, Rumpf stabilisierend', type: 'reps', bodyPart: 'legs', mainMuscle: 'Quadrizeps' },
+  { id: 'e31', name: 'Ausfallschritte (Kurzhanteln)',  sets: 3, repsMin: 10, repsMax: 12, weight: 0, category: 'unterkoerper', muscleGroup: 'Beine',    muscles: 'Quadrizeps, Gesäßmuskulatur', type: 'reps', bodyPart: 'legs', mainMuscle: 'Quadrizeps' },
+  { id: 'e32', name: 'Bulgarian Split Squats',         sets: 3, repsMin: 10, repsMax: 12, weight: 0, category: 'unterkoerper', muscleGroup: 'Beine',    muscles: 'Quadrizeps, Gesäßmuskulatur', type: 'reps', bodyPart: 'legs', mainMuscle: 'Quadrizeps' },
+  { id: 'e33', name: 'Wadenheben stehend',             sets: 3, repsMin: 12, repsMax: 20, weight: 0, category: 'unterkoerper', muscleGroup: 'Beine',    muscles: 'Wadenmuskulatur (Gastrocnemius, Soleus)', type: 'reps', bodyPart: 'legs', mainMuscle: 'Wadenmuskulatur' },
+  { id: 'e34', name: 'Hip Thrust',                     sets: 3, repsMin: 8,  repsMax: 12, weight: 0, category: 'unterkoerper', muscleGroup: 'Beine',    muscles: 'Gesäßmuskulatur, ischiocrurale Muskulatur unterstützend', type: 'reps', bodyPart: 'legs', mainMuscle: 'Gesäßmuskulatur' },
+  { id: 'e35', name: 'Klimmzüge',                      sets: 3, repsMin: 5,  repsMax: 10, weight: 0, category: 'oberkoerper', muscleGroup: 'Rücken',   muscles: 'Latissimus, Bizeps unterstützend', type: 'reps', bodyPart: 'pull', bodyweightExercise: true, mainMuscle: 'Latissimus' },
+  { id: 'e36', name: 'Enger Klimmzug (Chin-up)',       sets: 3, repsMin: 5,  repsMax: 10, weight: 0, category: 'oberkoerper', muscleGroup: 'Rücken',   muscles: 'Latissimus, Bizeps', type: 'reps', bodyPart: 'pull', bodyweightExercise: true, mainMuscle: 'Latissimus' },
+  { id: 'e37', name: 'Langhantelrudern vorgebeugt',    sets: 3, repsMin: 8,  repsMax: 12, weight: 0, category: 'oberkoerper', muscleGroup: 'Rücken',   muscles: 'Mittlerer und breiter Rückenmuskel, Bizeps unterstützend', type: 'reps', bodyPart: 'pull', mainMuscle: 'Rückenmuskulatur' },
+  { id: 'e38', name: 'Kurzhantelrudern einarmig',      sets: 3, repsMin: 8,  repsMax: 12, weight: 0, category: 'oberkoerper', muscleGroup: 'Rücken',   muscles: 'Latissimus, mittlerer Rücken, Bizeps unterstützend', type: 'reps', bodyPart: 'pull', mainMuscle: 'Latissimus' },
+  { id: 'e39', name: 'Shrugs (Langhantel)',            sets: 3, repsMin: 10, repsMax: 15, weight: 0, category: 'oberkoerper', muscleGroup: 'Rücken',   muscles: 'Trapezmuskulatur (oberer Anteil)', type: 'reps', bodyPart: 'pull', mainMuscle: 'Trapezmuskulatur' },
+  { id: 'e40', name: 'Bankdrücken (Langhantel)',       sets: 3, repsMin: 6,  repsMax: 10, weight: 0, category: 'oberkoerper', muscleGroup: 'Brust',    muscles: 'Brustmuskulatur, Trizeps und vordere Schulter unterstützend', type: 'reps', bodyPart: 'push', mainMuscle: 'Brustmuskulatur' },
+  { id: 'e41', name: 'Kurzhantel-Bankdrücken',         sets: 3, repsMin: 8,  repsMax: 12, weight: 0, category: 'oberkoerper', muscleGroup: 'Brust',    muscles: 'Brustmuskulatur, Trizeps unterstützend', type: 'reps', bodyPart: 'push', mainMuscle: 'Brustmuskulatur' },
+  { id: 'e42', name: 'Schrägbankdrücken (Langhantel)', sets: 3, repsMin: 6,  repsMax: 10, weight: 0, category: 'oberkoerper', muscleGroup: 'Brust',    muscles: 'Obere Brustmuskulatur, vordere Schulter unterstützend', type: 'reps', bodyPart: 'push', mainMuscle: 'Obere Brustmuskulatur' },
+  { id: 'e43', name: 'Kurzhantel-Fliegende',           sets: 3, repsMin: 10, repsMax: 15, weight: 0, category: 'oberkoerper', muscleGroup: 'Brust',    muscles: 'Brustmuskulatur (Isolation)', type: 'reps', bodyPart: 'push', mainMuscle: 'Brustmuskulatur' },
+  { id: 'e44', name: 'Liegestütze',                    sets: 3, repsMin: 10, repsMax: 20, weight: 0, category: 'oberkoerper', muscleGroup: 'Brust',    muscles: 'Brustmuskulatur, Trizeps und Schultern unterstützend', type: 'reps', bodyPart: 'push', noWeight: true, mainMuscle: 'Brustmuskulatur' },
+  { id: 'e45', name: 'Schulterdrücken (Langhantel)',   sets: 3, repsMin: 6,  repsMax: 10, weight: 0, category: 'oberkoerper', muscleGroup: 'Schultern', muscles: 'Schultermuskulatur, Trizeps unterstützend', type: 'reps', bodyPart: 'push', mainMuscle: 'Schultermuskulatur' },
+  { id: 'e46', name: 'Kurzhantel-Schulterdrücken',     sets: 3, repsMin: 8,  repsMax: 12, weight: 0, category: 'oberkoerper', muscleGroup: 'Schultern', muscles: 'Schultermuskulatur, Trizeps unterstützend', type: 'reps', bodyPart: 'push', mainMuscle: 'Schultermuskulatur' },
+  { id: 'e47', name: 'Vorgebeugtes Seitheben',         sets: 3, repsMin: 12, repsMax: 15, weight: 0, category: 'oberkoerper', muscleGroup: 'Schultern', muscles: 'Hintere Schultermuskulatur', type: 'reps', bodyPart: 'push', mainMuscle: 'Hintere Schulter' },
+  { id: 'e48', name: 'Face Pulls',                     sets: 3, repsMin: 12, repsMax: 15, weight: 0, category: 'oberkoerper', muscleGroup: 'Schultern', muscles: 'Hintere Schulter, Rotatorenmanschette', type: 'reps', bodyPart: 'push', mainMuscle: 'Hintere Schulter' },
+  { id: 'e49', name: 'Frontheben',                     sets: 3, repsMin: 10, repsMax: 15, weight: 0, category: 'oberkoerper', muscleGroup: 'Schultern', muscles: 'Vordere Schultermuskulatur', type: 'reps', bodyPart: 'push', mainMuscle: 'Vordere Schulter' },
+  { id: 'e50', name: 'Bizeps Curls Langhantel',        sets: 3, repsMin: 8,  repsMax: 12, weight: 0, category: 'oberkoerper', muscleGroup: 'Arme',     muscles: 'Bizeps', type: 'reps', bodyPart: 'pull', mainMuscle: 'Bizeps' },
+  { id: 'e51', name: 'Bizeps Curls Kurzhantel',        sets: 3, repsMin: 8,  repsMax: 12, weight: 0, category: 'oberkoerper', muscleGroup: 'Arme',     muscles: 'Bizeps', type: 'reps', bodyPart: 'pull', mainMuscle: 'Bizeps' },
+  { id: 'e52', name: 'Hammer Curls',                   sets: 3, repsMin: 8,  repsMax: 12, weight: 0, category: 'oberkoerper', muscleGroup: 'Arme',     muscles: 'Bizeps, Unterarmmuskulatur', type: 'reps', bodyPart: 'pull', mainMuscle: 'Bizeps' },
+  { id: 'e53', name: 'Trizeps Dips (Bank)',            sets: 3, repsMin: 8,  repsMax: 15, weight: 0, category: 'oberkoerper', muscleGroup: 'Arme',     muscles: 'Trizeps, vordere Schulter unterstützend', type: 'reps', bodyPart: 'push', bodyweightExercise: true, mainMuscle: 'Trizeps' },
+  { id: 'e54', name: 'Trizeps Kickback',               sets: 3, repsMin: 10, repsMax: 15, weight: 0, category: 'oberkoerper', muscleGroup: 'Arme',     muscles: 'Trizeps (Isolation)', type: 'reps', bodyPart: 'push', mainMuscle: 'Trizeps' },
+  { id: 'e55', name: 'Crunches',                       sets: 3, repsMin: 15, repsMax: 20, weight: 0, category: 'unterkoerper', muscleGroup: 'Bauch',   muscles: 'Gerade Bauchmuskulatur (Rectus abdominis)', type: 'reps', bodyPart: 'legs', noWeight: true, mainMuscle: 'Bauchmuskulatur' },
+  { id: 'e56', name: 'Bizeps Curls Kabelturm (einarmig)', sets: 3, repsMin: 8,  repsMax: 12, weight: 0, category: 'oberkoerper', muscleGroup: 'Arme', muscles: 'Bizeps', type: 'reps', bodyPart: 'pull', mainMuscle: 'Bizeps' },
+  { id: 'e57', name: 'Trizeps Extension Kabelturm (einarmig)', sets: 3, repsMin: 10, repsMax: 15, weight: 0, category: 'oberkoerper', muscleGroup: 'Arme', muscles: 'Trizeps', type: 'reps', bodyPart: 'push', mainMuscle: 'Trizeps' },
+  { id: 'e58', name: 'Trizeps Extension Kabelturm (zweiarmig)', sets: 3, repsMin: 10, repsMax: 15, weight: 0, category: 'oberkoerper', muscleGroup: 'Arme', muscles: 'Trizeps', type: 'reps', bodyPart: 'push', mainMuscle: 'Trizeps' }
+];
 
 let freeSelected = new Set();
 
@@ -2883,7 +3236,12 @@ async function init(){
   applyTheme();
 
   let planChanged = false;
+  // Übungen, die bewusst über hideExerciseFromPlan() ausgeblendet wurden, sollen beim nächsten
+  // App-Start NICHT automatisch wieder auftauchen — auch wenn sie Teil von
+  // DEFAULT_PLAN.exercises sind (sonst würde die Migration unten sie sofort erneut hinzufügen).
+  const hiddenIds = new Set((Array.isArray(plan.removedExercises) ? plan.removedExercises : []).map(e => e.id));
   DEFAULT_PLAN.exercises.forEach(defEx => {
+    if (hiddenIds.has(defEx.id)) return;
     if (!plan.exercises.some(e => e.id === defEx.id)){
       plan.exercises.push({ ...defEx });
       planChanged = true;
@@ -4143,6 +4501,15 @@ function isSystemKeyboardOnlyField(input){
     // popOverlayStateIfOpen()/history.back() denselben Bug auslösen, der schon bei
     // customRestSeconds unten dokumentiert ist (fälschliches Mitschließen des dahinter
     // liegenden Popups) — normale System-Tastatur umgeht das komplett.
+    return true;
+  }
+  if (!!input && input.closest && input.closest('#addPastSessionOverlay')){
+    // Gleicher Grund wie beim "Übung bearbeiten"-Popup direkt oberhalb: Der "Training
+    // nachtragen"-Wizard (openAddPastSessionWizard) ist selbst schon ein mehrstufiges
+    // Overlay mit eigenem History-Eintrag pro Schritt — ein zusätzlich verschachteltes
+    // Scroll-Rad/Ziffernblock-Overlay über Dauer-/Wdh-/kg-/Sekunden-Feldern brach den
+    // Verlaufsstapel und schloss den Wizard sofort wieder. Normale System-Tastatur umgeht
+    // das komplett, für alle Zahlenfelder in diesem Wizard.
     return true;
   }
   return !!input && (input.id === 'bodyWeightInput' || input.id === 'bodyWeightPromptInput' || input.id === 'customRestSeconds');
@@ -8607,6 +8974,7 @@ function openAddCategoryOrImportPrompt(){
       </div>
       <div class="new-exercise-modal-body">
         <button class="wizard-choice" id="promptAddCategory" style="width:100%; text-align:left; margin-bottom:10px;">+ Kategorie hinzufügen</button>
+        <button class="wizard-choice" id="promptAddPastSession" style="width:100%; text-align:left; margin-bottom:10px; display:flex; align-items:center; gap:8px;"><svg viewBox="0 0 512 512" width="18" height="18" fill="none" stroke="currentColor" stroke-width="34" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="256" cy="256" r="230"/><path d="M266 130 L266 256 L326 296"/></svg> Training nachtragen</button>
         <button class="wizard-choice" id="promptImportSession" style="width:100%; text-align:left;">⬆ Training importieren</button>
       </div>
     </div>
@@ -8620,10 +8988,374 @@ function openAddCategoryOrImportPrompt(){
   document.getElementById('addCategoryOrImportClose').onclick = close;
   overlay.onclick = (ev) => { if (ev.target === overlay) close(); };
   document.getElementById('promptAddCategory').onclick = () => { close(); openAddTilePrompt(); };
+  document.getElementById('promptAddPastSession').onclick = () => {
+    // Ersetzt den beim Öffnen dieses Auswahl-Popups gepushten History-Eintrag DIREKT durch
+    // den Wizard (siehe openAddPastSessionWizard(replaceParentOverlay)), statt erst per
+    // close() zurückzugehen und danach neu zu pushen — ein history.back() gefolgt von einem
+    // sofortigen pushState() im selben Tick wäre eine Race Condition (back() wird asynchron
+    // verarbeitet), wodurch der Wizard sofort wieder verschwunden wäre.
+    if (overlayCloseStack[overlayCloseStack.length - 1] === remove) overlayCloseStack.pop();
+    remove();
+    openAddPastSessionWizard(true);
+  };
   document.getElementById('promptImportSession').onclick = () => {
     close();
     document.getElementById('importSessionFile').click();
   };
+}
+
+// Mehrstufiger Wizard zum nachträglichen Erfassen einer bereits abgeschlossenen
+// Trainingseinheit (für den Fall, dass während des Trainings selbst nicht mitgeloggt wurde) —
+// erreichbar über den "+"-Button unter dem Kachel-Raster (siehe openAddCategoryOrImportPrompt()
+// oben). Ablauf: 1) Datum/Uhrzeit/Dauer, 2) Übungen auswählen (Mehrfachauswahl wie beim
+// "Aus Vorlagen wählen"-Picker, siehe openExerciseLibraryPicker()), 3) pro ausgewählter Übung
+// die Sätze eintragen (gleiches Zeilen-Layout wie openSessionEntryEditor()). Baut am Ende ein
+// vollwertiges Session-Objekt in derselben Form wie endSession() und speichert es direkt,
+// ganz ohne den normalen aktiven-Training-Ablauf zu durchlaufen.
+function openAddPastSessionWizard(replaceParentOverlay){
+  const now = new Date();
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const draft = {
+    date: `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`,
+    time: `${pad2(now.getHours())}:${pad2(now.getMinutes())}`,
+    durationMin: 60,
+    exerciseIds: [], // Auswahl-Reihenfolge = Reihenfolge der Sätze-Erfassungsschritte
+    setsByExerciseId: {}
+  };
+  let stepIndex = 0;
+  // Bei Aufruf aus dem "+"-Auswahl-Popup (replaceParentOverlay=true) übernimmt der ALLERERSTE
+  // render()-Aufruf den History-Eintrag des Eltern-Popups direkt per history.replaceState,
+  // statt ihn erst per close() zurückzunehmen (async) und danach neu zu pushen (sync) —
+  // dieselbe Race Condition wie bei openAddTilePrompt/dayTrainingPopupHistory (siehe dort).
+  let parentReplaced = !replaceParentOverlay;
+
+  function ensureSetsFor(ex){
+    if (draft.setsByExerciseId[ex.id]) return;
+    const isTime = ex.type === 'time';
+    const isCardio = isTime && !!ex.cardioMachine;
+    const count = isCardio ? 1 : (ex.sets || 3);
+    // Vorbelegung mit den Werten vom letzten Mal (lastPerformance), exakt wie beim normalen
+    // Trainingsstart (siehe buildEntry()) — leere Felder wären beim Nachtragen unpraktisch,
+    // da man sich sonst jeden Wert erst wieder ausdenken müsste. Gibt es keine Historie zu
+    // dieser Übung, wird wie sonst auch mit leeren Feldern (bzw. ex.weight als Starthilfe)
+    // begonnen. Übernimmt dabei bewusst die tatsächliche Satzanzahl vom letzten Mal statt
+    // ex.sets, falls sich die Standard-Satzzahl der Übung seither geändert hat.
+    const storedHistory = lastPerformance[ex.id];
+    const history = Array.isArray(storedHistory) && storedHistory.length && Array.isArray(storedHistory[0])
+      ? storedHistory
+      : (Array.isArray(storedHistory) && storedHistory.length ? [storedHistory] : []);
+    const remembered = history[0] || null;
+    const rememberedSets = (remembered && remembered.length) ? (isCardio ? remembered.slice(0, 1) : remembered) : null;
+    draft.setsByExerciseId[ex.id] = rememberedSets
+      ? rememberedSets.map(s => isTime ? { seconds: s.seconds ?? null } : { reps: s.reps ?? null, weight: s.weight ?? null })
+      : Array.from({length: count}, () => isTime ? { seconds: null } : { reps: null, weight: ex.weight || null });
+  }
+
+  function stepsFor(){
+    const steps = [];
+
+    steps.push({
+      title: 'Wann war das Training?',
+      render: (body, next) => {
+        body.innerHTML = `
+          <label style="display:block; font-size:12px; color:var(--muted); margin-bottom:6px;">Datum</label>
+          <input type="date" id="pastDate" value="${draft.date}" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-size:15px; margin-bottom:14px;">
+          <label style="display:block; font-size:12px; color:var(--muted); margin-bottom:6px;">Uhrzeit (Start)</label>
+          <input type="time" id="pastTime" value="${draft.time}" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-size:15px; margin-bottom:14px;">
+          <label style="display:block; font-size:12px; color:var(--muted); margin-bottom:6px;">Dauer (Minuten)</label>
+          <input type="number" inputmode="numeric" id="pastDuration" value="${draft.durationMin}" min="1" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-size:15px; margin-bottom:16px;">
+          <button class="btn btn-primary" id="pastDateNext" style="width:100%;">Weiter</button>
+        `;
+        body.querySelector('#pastDateNext').onclick = () => {
+          const dateVal = body.querySelector('#pastDate').value;
+          const timeVal = body.querySelector('#pastTime').value;
+          const durVal = parseInt(body.querySelector('#pastDuration').value, 10);
+          if (!dateVal || !timeVal){ alert('Bitte Datum und Uhrzeit eintragen.'); return; }
+          if (!Number.isFinite(durVal) || durVal < 1){ alert('Bitte eine gültige Dauer in Minuten eintragen.'); return; }
+          draft.date = dateVal;
+          draft.time = timeVal;
+          draft.durationMin = durVal;
+          next();
+        };
+      }
+    });
+
+    steps.push({
+      title: 'Welche Übungen?',
+      render: (body, next) => {
+        let query = '';
+        // Eigener Öffnen/Zustand pro Muskelgruppe für dieses Auswahl-Fenster (Akkordeon,
+        // gleiches Prinzip wie im Übungen-Editor/renderPlanRows) — bei aktiver Suche werden
+        // alle Treffergruppen automatisch aufgeklappt gezeigt, sonst bleiben sie zu, damit die
+        // lange Gesamtliste nicht unpraktikabel wird.
+        const groupOpen = new Set();
+        body.innerHTML = `
+          <input type="text" id="pastExSearch" class="plan-search" placeholder="Übung oder Muskel suchen…" style="margin-bottom:4px;">
+          <div id="pastExList"></div>
+          <button class="btn btn-primary" id="pastExNext" style="width:100%; margin-top:16px;" ${draft.exerciseIds.length ? '' : 'disabled'}>${draft.exerciseIds.length ? `Weiter (${draft.exerciseIds.length})` : 'Weiter'}</button>
+        `;
+        const listEl = body.querySelector('#pastExList');
+        const nextBtn = body.querySelector('#pastExNext');
+        const renderList = () => {
+          const q = query.trim().toLowerCase();
+          const list = plan.exercises.filter(ex => !q || ex.name.toLowerCase().includes(q) || (ex.muscleGroup || '').toLowerCase().includes(q));
+          const groups = {};
+          list.forEach(ex => { (groups[ex.muscleGroup || 'Sonstige'] = groups[ex.muscleGroup || 'Sonstige'] || []).push(ex); });
+          listEl.innerHTML = MUSCLE_GROUP_ORDER.filter(g => groups[g]).map(g => {
+            const items = groups[g];
+            const selectedCount = items.filter(ex => draft.exerciseIds.includes(ex.id)).length;
+            const isOpen = q ? true : groupOpen.has(g);
+            return `
+              <div class="muscle-group">
+                <button class="muscle-group-header" data-past-group="${g}" type="button">
+                  <span class="mg-name">${g}</span>
+                  <span class="mg-meta">${selectedCount ? `${selectedCount} ausgewählt · ` : ''}${items.length} Übung${items.length === 1 ? '' : 'en'} <span class="mg-arrow">${isOpen ? '▾' : '▸'}</span></span>
+                </button>
+                <div class="muscle-group-body" style="display:${isOpen ? 'block' : 'none'}">
+                  ${items.map(ex => `
+                    <button type="button" class="stat-toggle-row ${draft.exerciseIds.includes(ex.id) ? 'checked' : ''}" data-past-ex="${ex.id}">
+                      <span class="stat-toggle-check">✓</span>
+                      <span>${exerciseNameHTML(ex.name)}</span>
+                    </button>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+          }).join('') || `<div class="history-empty">Keine passenden Übungen gefunden.</div>`;
+          listEl.querySelectorAll('[data-past-group]').forEach(btn => {
+            btn.onclick = () => {
+              const g = btn.dataset.pastGroup;
+              if (groupOpen.has(g)) groupOpen.delete(g); else groupOpen.add(g);
+              renderList();
+            };
+          });
+          listEl.querySelectorAll('[data-past-ex]').forEach(btn => {
+            btn.onclick = () => {
+              const id = btn.dataset.pastEx;
+              const idx = draft.exerciseIds.indexOf(id);
+              if (idx === -1) draft.exerciseIds.push(id); else draft.exerciseIds.splice(idx, 1);
+              renderList();
+              nextBtn.disabled = !draft.exerciseIds.length;
+              nextBtn.textContent = draft.exerciseIds.length ? `Weiter (${draft.exerciseIds.length})` : 'Weiter';
+            };
+          });
+        };
+        body.querySelector('#pastExSearch').oninput = (ev) => { query = ev.target.value; renderList(); };
+        renderList();
+        nextBtn.onclick = () => {
+          if (!draft.exerciseIds.length) return;
+          draft.exerciseIds.forEach(id => {
+            const ex = plan.exercises.find(e => e.id === id);
+            if (ex) ensureSetsFor(ex);
+          });
+          next();
+        };
+      }
+    });
+
+    draft.exerciseIds.forEach((id, idx) => {
+      const ex = plan.exercises.find(e => e.id === id);
+      if (!ex) return;
+      const isLastExercise = idx === draft.exerciseIds.length - 1;
+      steps.push({
+        title: ex.name,
+        subtitle: `Übung ${idx + 1} von ${draft.exerciseIds.length} — Sätze eintragen`,
+        render: (body, next) => {
+          ensureSetsFor(ex);
+          const isTime = ex.type === 'time';
+          const noWeight = !!ex.noWeight;
+          body.innerHTML = `
+            ${isTime ? `
+              <div class="sets-header sets-header-time">
+                <span class="sets-header-cell">#</span>
+                <span class="sets-header-cell">Sek.</span>
+                <span class="sets-header-cell"></span>
+                <span class="sets-header-cell"></span>
+              </div>` : `
+              <div class="sets-header">
+                <span class="sets-header-cell">#</span>
+                <span class="sets-header-cell">Wdh</span>
+                <span class="sets-header-cell">kg</span>
+                <span class="sets-header-cell"></span>
+                <span class="sets-header-cell"></span>
+                <span class="sets-header-cell"></span>
+              </div>`}
+            <div class="sets" id="pastSets"></div>
+            <div class="add-set-row"><button class="add-set" id="pastAddSet" aria-label="Satz hinzufügen">+</button></div>
+            <button class="btn btn-primary" id="pastExerciseNext" style="width:100%; margin-top:16px;">${isLastExercise ? 'Fertig' : 'Weiter'}</button>
+          `;
+          const setsEl = body.querySelector('#pastSets');
+          const renderSets = () => {
+            const sets = draft.setsByExerciseId[ex.id];
+            setsEl.innerHTML = sets.map((s, si) => isTime ? `
+              <div class="set-row set-row-time" data-set="${si}">
+                <span class="set-idx">${si + 1}</span>
+                <input type="number" inputmode="numeric" enterkeyhint="done" placeholder="Sekunden" value="${s.seconds ?? ''}" data-field="seconds" data-si="${si}">
+                <button class="icon-x" data-removeset="${si}" aria-label="Satz ${si + 1} entfernen">✕</button>
+              </div>
+            ` : `
+              <div class="set-row" data-set="${si}">
+                <span class="set-idx">${si + 1}</span>
+                <input type="number" inputmode="numeric" enterkeyhint="done" placeholder="Wdh" value="${s.reps ?? ''}" data-field="reps" data-si="${si}">
+                <input type="number" inputmode="decimal" enterkeyhint="done" placeholder="kg" step="0.5" value="${noWeight ? '' : (s.weight ?? '')}" data-field="weight" data-si="${si}" ${noWeight ? 'disabled' : ''}>
+                <button class="icon-x" data-removeset="${si}" aria-label="Satz ${si + 1} entfernen">✕</button>
+              </div>
+            `).join('');
+            setsEl.querySelectorAll('[data-removeset]').forEach(btn => {
+              btn.onclick = () => { sets.splice(Number(btn.dataset.removeset), 1); renderSets(); };
+            });
+            setsEl.querySelectorAll('input[data-field]').forEach(input => {
+              // oninput: Wert sofort im Draft merken, aber OHNE Neu-Rendern — sonst würde
+              // jeder Tastendruck den Fokus aus dem Feld werfen (Cursor springt raus, siehe
+              // ähnliches Muster applySetValueAndPropagate() im aktiven Training). Die
+              // Übernahme in die Folge-Sätze (Wdh aus Satz 1 → Satz 2 → Satz 3 usw., dasselbe
+              // für kg) passiert erst onchange (Verlassen des Feldes/Enter) — genau dann wird
+              // auch neu gerendert, damit die übernommenen Werte in den Folgefeldern sichtbar
+              // werden.
+              input.oninput = () => {
+                const si = Number(input.dataset.si);
+                const field = input.dataset.field;
+                sets[si][field] = input.value === '' ? null : Number(input.value);
+              };
+              input.onchange = () => {
+                const si = Number(input.dataset.si);
+                const field = input.dataset.field;
+                const val = input.value === '' ? null : Number(input.value);
+                if (val !== null) applySetValueAndPropagate({ sets }, si, { [field]: val });
+                else sets[si][field] = null;
+                renderSets();
+              };
+            });
+          };
+          renderSets();
+          body.querySelector('#pastAddSet').onclick = () => {
+            draft.setsByExerciseId[ex.id].push(isTime ? { seconds: null } : { reps: null, weight: null });
+            renderSets();
+          };
+          body.querySelector('#pastExerciseNext').onclick = () => {
+            if (isLastExercise) finish(); else next();
+          };
+        }
+      });
+    });
+
+    return steps;
+  }
+
+  async function finish(){
+    const startedAt = new Date(`${draft.date}T${draft.time}:00`);
+    if (isNaN(startedAt.getTime())){ alert('Ungültiges Datum/Uhrzeit.'); return; }
+    const durationSec = Math.max(1, Math.round(draft.durationMin * 60));
+    const entries = draft.exerciseIds.map(id => {
+      const ex = plan.exercises.find(e => e.id === id);
+      if (!ex) return null;
+      const isTime = ex.type === 'time';
+      const rawSets = draft.setsByExerciseId[id] || [];
+      const cleanedSets = rawSets.filter(s => isTime ? (s.seconds !== null && s.seconds !== undefined) : (s.reps !== null || s.weight !== null));
+      if (!cleanedSets.length) return null;
+      return {
+        exerciseId: ex.id,
+        name: ex.name,
+        type: ex.type,
+        target: isTime
+          ? { sets: ex.sets, secondsMin: ex.secondsMin, secondsMax: ex.secondsMax }
+          : { sets: ex.sets, repsMin: ex.repsMin, repsMax: ex.repsMax, weight: ex.weight },
+        sets: cleanedSets.map(s => ({ ...s, done: true }))
+      };
+    }).filter(Boolean);
+
+    if (!entries.length){
+      alert('Bitte mindestens eine Übung mit mindestens einem ausgefüllten Satz eintragen.');
+      return;
+    }
+
+    const session = {
+      id: uid(),
+      date: startedAt.toISOString(),
+      durationSec,
+      mode: null,
+      modeVariant: null,
+      deloadUsed: false,
+      entries
+    };
+
+    sessions.push(session);
+    sessions.sort((a, b) => new Date(a.date) - new Date(b.date));
+    await saveSessionAt(session);
+    rebuildLastPerformance();
+    await saveJSON('lastPerformance', lastPerformance);
+
+    closeOverlay();
+    replaceView('home');
+    goSessionDetail(session.id);
+  }
+
+  function closeOverlay(){
+    popOverlayStateIfOpen();
+    removeOverlayEl();
+  }
+  function removeOverlayEl(){
+    const el = document.getElementById('addPastSessionOverlay');
+    if (el) el.remove();
+  }
+
+  function render(fromPopState){
+    const steps = stepsFor();
+    if (stepIndex >= steps.length) stepIndex = steps.length - 1;
+    const step = steps[stepIndex];
+
+    removeOverlayEl();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'add-exercise-overlay centered-overlay';
+    overlay.id = 'addPastSessionOverlay';
+    overlay.innerHTML = `
+      <div class="add-exercise-modal" style="max-height:88vh;">
+        <div class="add-exercise-modal-header">
+          <div>
+            <div class="wizard-progress">Schritt ${stepIndex + 1} von ${steps.length}</div>
+            <div class="add-exercise-modal-title">${step.title}</div>
+            ${step.subtitle ? `<div class="wizard-subtitle">${step.subtitle}</div>` : ''}
+          </div>
+          <button class="add-exercise-modal-close" id="addPastSessionClose" aria-label="Abbrechen">✕</button>
+        </div>
+        <div class="new-exercise-modal-body" id="addPastSessionBody"></div>
+        ${stepIndex > 0 ? `<div class="add-exercise-modal-header" style="border-top:1px solid var(--border); border-bottom:none;">
+          <button class="btn btn-ghost" id="pastWizBack" style="width:100%;">‹ Zurück</button>
+        </div>` : ''}
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    if (!fromPopState){
+      const closeFn = () => {
+        if (stepIndex > 0){
+          stepIndex -= 1;
+          render(true);
+        } else {
+          removeOverlayEl();
+        }
+      };
+      if (!parentReplaced){
+        overlayCloseStack.push(closeFn);
+        history.replaceState({ view: '__overlay__', params: {} }, '', '');
+        parentReplaced = true;
+      } else {
+        pushOverlayState(closeFn);
+      }
+    }
+
+    overlay.onclick = (ev) => { if (ev.target === overlay) closeOverlay(); };
+    document.getElementById('addPastSessionClose').onclick = closeOverlay;
+    const backBtn = document.getElementById('pastWizBack');
+    if (backBtn) backBtn.onclick = () => { popOverlayStateIfOpen(); stepIndex -= 1; render(); };
+
+    const body = document.getElementById('addPastSessionBody');
+    const next = () => { stepIndex += 1; render(); };
+    step.render(body, next);
+  }
+
+  render();
 }
 
 // Long-Press auf eine freie Fläche im Kachel-Raster (wenn weniger als alle Kacheln
@@ -9537,6 +10269,21 @@ async function toggleExerciseFavorite(id){
   plan.favoriteExerciseIds = favs;
   await saveJSON('plan', plan);
 }
+// Entfernt eine Übung NICHT endgültig, sondern blendet sie nur aus dem aktiven Übungsplan
+// (plan.exercises) aus und legt sie stattdessen in plan.removedExercises ab — von dort taucht
+// sie im "Aus Vorlagen wählen"-Picker (siehe openExerciseLibraryPicker()) wieder auf und kann
+// jederzeit erneut hinzugefügt werden, mit allen ursprünglichen Werten (inkl. eigenem Bild,
+// falls vorhanden). Ein zusätzlich gesetzter Favoriten-Status wird dabei mit entfernt, da eine
+// ausgeblendete Übung nicht mehr in der Favoriten-Liste auftauchen soll.
+async function hideExerciseFromPlan(i){
+  const [ex] = plan.exercises.splice(i, 1);
+  if (!ex) return;
+  if (isExerciseFavorite(ex.id)) await toggleExerciseFavorite(ex.id);
+  if (!Array.isArray(plan.removedExercises)) plan.removedExercises = [];
+  plan.removedExercises = plan.removedExercises.filter(r => r.id !== ex.id);
+  plan.removedExercises.push(ex);
+  await saveJSON('plan', plan);
+}
 // Stern-Icon als Inline-SVG statt Bilddatei — dadurch kann die Füllung exakt der frei wählbaren
 // Akzentfarbe folgen (currentColor, gleiches Prinzip wie das Repeat-Icon bei "Nochmal
 // trainieren"), was mit einem gefilterten Raster-Icon bei einer beliebigen Akzentfarbe nicht
@@ -9553,6 +10300,7 @@ function renderExerciseRowHTML(ex, i){
       <div class="plan-row-name">${exerciseNameHTML(ex.name)}</div>
       <button type="button" class="exercise-fav-btn" data-fav="${ex.id}" aria-label="${isExerciseFavorite(ex.id) ? 'Favorit entfernen' : 'Als Favorit markieren'}">${starIconSVG(isExerciseFavorite(ex.id))}</button>
       <button type="button" class="plan-row-edit-btn" data-edit="${i}" aria-label="Bearbeiten"><img src="${ICON_EDIT}" alt=""></button>
+      <button type="button" class="plan-row-delete-btn" data-hide="${i}" aria-label="Übung ausblenden">✕</button>
     </div>
   `;
 }
@@ -10164,6 +10912,7 @@ function settingsAccordionSection(key, title, bodyHTML, badge){
 function renderSettings(){
   const perfModeOn = !!plan.performanceMode;
   const perfThreshold = Number.isInteger(plan.performanceThreshold) && plan.performanceThreshold >= 2 ? plan.performanceThreshold : 3;
+  const perfPercentage = currentPerfPercentage();
   const themeLabel = currentThemeMode() === 'light' ? 'Hell' : 'Dunkel';
   const darstellungBadge = `${themeLabel} · ${currentAccentColor().name}`;
   const numberModeLabels = { system: 'Normale Tastatur', wheel: 'Scroll-Rad', keypad: 'Ziffernblock', combo: 'Rad + Block' };
@@ -10359,6 +11108,15 @@ function renderSettings(){
       <div class="muscle-group-body" style="display:${perfModeOn ? 'block' : 'none'}">
         <div style="padding:14px 16px; text-align:left; font-size:14px; line-height:1.6;">
           Steigerung vorschlagen ab <input type="number" inputmode="numeric" min="2" max="20" step="1" class="inline-plain-input" id="perfThresholdInput" enterkeyhint="done" value="${perfThreshold}"> mal.
+        </div>
+        <div style="padding:0 16px 14px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <input type="range" id="perfPercentageSlider" min="10" max="100" step="10" value="${perfPercentage}" style="flex:1; accent-color: var(--accent);">
+            <span style="font-size:13px; color:var(--text); min-width:38px; text-align:right;" id="perfPercentageValue">${perfPercentage}%</span>
+          </div>
+          <div class="history-empty" style="margin-top:8px; padding:8px 4px; text-align:left; background:none; border:none;">
+            <span style="font-size:11px; color:var(--muted);">Bei wie viel Prozent der Übungen im Training soll nach dem ${perfThreshold}. mal eine Verbesserung vorgeschlagen werden.</span>
+          </div>
         </div>
       </div>
     </div>
@@ -10599,6 +11357,23 @@ function renderSettings(){
     };
   }
 
+  const perfPercentageSliderEl = document.getElementById('perfPercentageSlider');
+  if (perfPercentageSliderEl){
+    const perfPercentageValueEl = document.getElementById('perfPercentageValue');
+    perfPercentageSliderEl.oninput = () => {
+      // Auf 10er-Schritte einrasten (step=10 im Markup übernimmt das meistens schon selbst,
+      // hier zusätzlich als Sicherheitsnetz) und die Prozentanzeige live mitziehen.
+      const snapped = Math.round(parseInt(perfPercentageSliderEl.value, 10) / 10) * 10;
+      perfPercentageSliderEl.value = snapped;
+      if (perfPercentageValueEl) perfPercentageValueEl.textContent = snapped + '%';
+    };
+    perfPercentageSliderEl.onchange = async () => {
+      const snapped = Math.round(parseInt(perfPercentageSliderEl.value, 10) / 10) * 10;
+      plan.performancePercentage = snapped;
+      await saveJSON('plan', plan);
+    };
+  }
+
   const restRingToggleEl = document.getElementById('restRingToggle');
   if (restRingToggleEl) restRingToggleEl.onclick = async () => {
     plan.showRestRing = !ringOn;
@@ -10703,6 +11478,124 @@ function renderSettings(){
 // Einzelformular). Das Bild ist der letzte Schritt und lässt sich überspringen ("Später"),
 // die Übung wird dann ohne Bild gespeichert und kann jederzeit im Übungen-Editor nachträglich
 // ein Bild bekommen.
+// Picker-Popup für die Übungs-Bibliothek (EXERCISE_LIBRARY) — aufgerufen aus dem ersten
+// Schritt von openNewExerciseModal() über den "Aus Vorlagen wählen"-Button neben dem
+// Namensfeld. Zeigt alle Bibliotheks-Übungen, die noch nicht im eigenen plan.exercises
+// stecken (nach Muskelgruppe sortiert), als ankreuzbare Checkbox-Zeilen (.stat-toggle-row,
+// gleiches Muster wie die Statistik-Sichtbarkeits-Liste in den Einstellungen). Mehrfachauswahl
+// per Antippen, "Weiter" fügt alle markierten Übungen direkt und vollständig (inkl. passendem
+// EXERCISE_INFO-Eintrag über die ID) zu plan.exercises hinzu und speichert. onDone(count) wird
+// danach mit der Anzahl hinzugefügter Übungen aufgerufen, damit der Aufrufer (der komplette
+// "Übung anlegen"-Dialog) sich selbst schließen und den Übungen-Editor neu zeichnen kann.
+function openExerciseLibraryPicker(onDone){
+  const existingIds = new Set(plan.exercises.map(e => e.id));
+  // Eigene ausgeblendete Übungen (siehe hideExerciseFromPlan()) zusammen mit der allgemeinen
+  // Bibliothek anbieten — bei einer ID, die es in beiden gibt, gewinnt die eigene Version
+  // (behält z. B. ein selbst hinzugefügtes Bild), daher zuerst die Bibliothek einsortieren und
+  // removedExercises danach drüberschreiben.
+  const byId = {};
+  EXERCISE_LIBRARY.forEach(e => { if (!existingIds.has(e.id)) byId[e.id] = e; });
+  (Array.isArray(plan.removedExercises) ? plan.removedExercises : []).forEach(e => {
+    if (!existingIds.has(e.id)) byId[e.id] = e;
+  });
+  const available = Object.values(byId);
+  let selected = new Set();
+  let query = '';
+
+  function filtered(){
+    if (!query.trim()) return available;
+    const q = query.trim().toLowerCase();
+    return available.filter(e => e.name.toLowerCase().includes(q) || (e.muscleGroup || '').toLowerCase().includes(q));
+  }
+
+  function listHTML(){
+    const list = filtered();
+    if (!list.length) return `<div class="history-empty">Keine passenden Übungen gefunden.</div>`;
+    const groups = {};
+    list.forEach(e => {
+      const g = e.muscleGroup || 'Sonstige';
+      (groups[g] = groups[g] || []).push(e);
+    });
+    return MUSCLE_GROUP_ORDER.filter(g => groups[g]).map(g => `
+      <div class="section-label" style="margin-top:14px;">${g}</div>
+      ${groups[g].map(e => `
+        <button type="button" class="stat-toggle-row ${selected.has(e.id) ? 'checked' : ''}" data-lib-id="${e.id}">
+          <span class="stat-toggle-check">✓</span>
+          <span>${exerciseNameHTML(e.name)}</span>
+        </button>
+      `).join('')}
+    `).join('');
+  }
+
+  function render(){
+    const existingOverlay = document.getElementById('exerciseLibraryOverlay');
+    if (existingOverlay) existingOverlay.remove();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'add-exercise-overlay centered-overlay';
+    overlay.id = 'exerciseLibraryOverlay';
+    overlay.innerHTML = `
+      <div class="add-exercise-modal" style="max-height:88vh;">
+        <div class="add-exercise-modal-header">
+          <div class="add-exercise-modal-title">Aus Vorlagen wählen</div>
+          <button class="add-exercise-modal-close" id="exLibClose" aria-label="Abbrechen">✕</button>
+        </div>
+        <div style="padding:14px 16px 0;">
+          <input type="text" id="exLibSearch" class="plan-search" placeholder="Übung oder Muskel suchen…" value="${query.replace(/"/g,'&quot;')}">
+        </div>
+        <div class="new-exercise-modal-body" id="exLibBody">${listHTML()}</div>
+        <div class="add-exercise-modal-header" style="border-top:1px solid var(--border); border-bottom:none;">
+          <button class="btn btn-primary" id="exLibNext" style="width:100%;" ${selected.size ? '' : 'disabled'}>Weiter${selected.size ? ` (${selected.size})` : ''}</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    pushOverlayState(close);
+
+    overlay.onclick = (ev) => { if (ev.target === overlay) close(); };
+    document.getElementById('exLibClose').onclick = close;
+
+    const searchInput = document.getElementById('exLibSearch');
+    searchInput.onclick = (ev) => ev.stopPropagation();
+    searchInput.oninput = (ev) => { query = ev.target.value; render(); searchInput.focus(); };
+
+    overlay.querySelectorAll('[data-lib-id]').forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.dataset.libId;
+        if (selected.has(id)) selected.delete(id); else selected.add(id);
+        render();
+      };
+    });
+
+    document.getElementById('exLibNext').onclick = async () => {
+      if (!selected.size) return;
+      const toAdd = available.filter(e => selected.has(e.id));
+      toAdd.forEach(e => {
+        plan.exercises.push({ ...e });
+        planGroupOpen.add(e.muscleGroup || 'Sonstige');
+      });
+      if (Array.isArray(plan.removedExercises)){
+        plan.removedExercises = plan.removedExercises.filter(e => !selected.has(e.id));
+      }
+      await saveJSON('plan', plan);
+      popOverlayStateIfOpen();
+      removeOverlayEl();
+      onDone(toAdd.length);
+    };
+  }
+
+  function removeOverlayEl(){
+    const el = document.getElementById('exerciseLibraryOverlay');
+    if (el) el.remove();
+  }
+  function close(){
+    popOverlayStateIfOpen();
+    removeOverlayEl();
+  }
+
+  render();
+}
+
 function openNewExerciseModal(){
   const MUSCLE_GROUP_TO_BODYPART = { Beine: 'legs', Bauch: 'legs', Schultern: 'push', Brust: 'push', Rücken: 'pull' };
   let draft = { id: null, name: '', sets: 3, repsMin: 8, repsMax: 12, secondsMin: 30, secondsMax: 60, weight: 0, category: 'oberkoerper', muscleGroup: 'Sonstige', mainMuscle: '', muscles: '', type: 'reps', assisted: false, bodyweightExercise: false };
@@ -10721,6 +11614,7 @@ function openNewExerciseModal(){
         body.innerHTML = `
           <input type="text" id="wizName" value="${(draft.name || '').replace(/"/g,'&quot;')}" placeholder="z. B. Kreuzheben" style="width:100%; padding:14px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-size:16px;">
           <button class="btn btn-primary" id="wizNameNext" style="width:100%; margin-top:16px;">Weiter</button>
+          <button class="btn btn-ghost" id="wizFromLibrary" style="width:100%; margin-top:10px;">Aus Vorlagen wählen ›</button>
         `;
         const input = body.querySelector('#wizName');
         input.focus();
@@ -10731,6 +11625,12 @@ function openNewExerciseModal(){
         };
         input.onkeydown = (ev) => { if (ev.key === 'Enter'){ ev.preventDefault(); input.blur(); submit(); } };
         body.querySelector('#wizNameNext').onclick = submit;
+        body.querySelector('#wizFromLibrary').onclick = () => {
+          openExerciseLibraryPicker((count) => {
+            closeOverlay();
+            if (count) renderPlanEditor();
+          });
+        };
       }
     });
 
@@ -11050,6 +11950,13 @@ function renderPlanEditor(){
         renderPlanRows();
       };
     });
+    container.querySelectorAll('[data-hide]').forEach(btn => {
+      btn.onclick = async () => {
+        const i = Number(btn.dataset.hide);
+        await hideExerciseFromPlan(i);
+        renderPlanRows();
+      };
+    });
   }
 
   renderPlanRows();
@@ -11365,8 +12272,9 @@ function afterSetChecked(entry, ei){
 // Popup-Zustand: null oder { entryIndex, setIndex, weight, reps } — siehe renderActive().
 let perfSuggestion = null;
 
-// Begrenzt Steigerungs-Vorschläge auf höchstens ~20% der Übungen EINER Trainingseinheit,
-// statt (wie zuvor) für jede passende Übung einen anzubieten — bei zwei identischen Einheiten
+// Begrenzt Steigerungs-Vorschläge auf höchstens den in den Einstellungen frei wählbaren
+// Prozentsatz (plan.performancePercentage, siehe currentPerfPercentage()) der Übungen EINER
+// Trainingseinheit, statt (wie zuvor) für jede passende Übung einen anzubieten — bei zwei identischen Einheiten
 // in Folge hätte das sonst quasi "die ganze Einheit auf einmal" gesteigert, was zu krass ist.
 // Aus allen diese Einheit betreffenden, grundsätzlich passenden Übungen (siehe
 // checkPerformanceSuggestion()/checkCardioPerfSuggestion()) werden gezielt die bevorzugt, die
@@ -11396,7 +12304,7 @@ function computePerfSuggestionQuota(){
       }
       if (isEligible) eligible.push(entry.exerciseId);
     });
-    cap = Math.max(1, Math.round(active.entries.length * 0.2));
+    cap = Math.max(1, Math.round(active.entries.length * (currentPerfPercentage() / 100)));
     const lastShown = plan.perfSuggestionLastShown || {};
     eligible.sort((a, b) => (lastShown[a] || '').localeCompare(lastShown[b] || ''));
     eligible.slice(0, cap).forEach(id => allowedIds.add(id));
@@ -11436,7 +12344,7 @@ function maybeShowPerfSuggestion(entry, ei, currentPlanEx){
   if (!plan.performanceMode || !entry) return;
   if (perfSuggestion) return; // es ist schon ein Vorschlag offen
   if (entry._perfSuggestionDismissed) return;
-  if (!computePerfSuggestionQuota().has(entry.exerciseId)) return; // außerhalb des ~20%-Kontingents dieser Einheit
+  if (!computePerfSuggestionQuota().has(entry.exerciseId)) return; // außerhalb des einstellbaren Prozent-Kontingents dieser Einheit
   const si = 0;
   const set = entry.sets[si];
   if (!set || set.done) return;
@@ -11551,6 +12459,15 @@ const PERF_HISTORY_DEPTH = 20;
 // (plan.performanceThreshold, Zahlenfeld in den Einstellungen, Standard: 3 = ab dem 3. Mal).
 // Assistierte Übungen (z. B. Klimmzugmaschine) brauchen dabei weiterhin einen Treffer mehr als
 // normale Übungen.
+// Liest den frei einstellbaren Prozentsatz für das Performancemodus-Kontingent
+// (plan.performancePercentage, Schieberegler in den Einstellungen, Standard: 20%,
+// gültige Werte 10-100 in 10er-Schritten) — siehe computePerfSuggestionQuota().
+function currentPerfPercentage(){
+  const v = plan && plan.performancePercentage;
+  if (Number.isInteger(v) && v >= 10 && v <= 100 && v % 10 === 0) return v;
+  return 20;
+}
+
 function requiredMatchesFor(assisted){
   const threshold = Number.isInteger(plan.performanceThreshold) && plan.performanceThreshold >= 2 ? plan.performanceThreshold : 3;
   const base = threshold - 1;
